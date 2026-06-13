@@ -1,0 +1,26 @@
+{
+  "name": "bnb-bomber",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "assets:reference": "python3 scripts/prepare-reference-assets.py",
+    "assets:style": "python3 scripts/generate-bnb-style-assets.py",
+    "assets:bnb": "python3 scripts/prepare-bnb-assets.py",
+    "assets": "python3 scripts/prepare-bnb-assets.py",
+    "qa": "node scripts/qa-gameplay.mjs",
+    "qa:duel": "node scripts/qa-duel.mjs",
+    "qa:health": "node scripts/health-check.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  }
+}

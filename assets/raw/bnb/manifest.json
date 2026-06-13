@@ -1,0 +1,42 @@
+{
+  "walkFramesPerDirection": 4,
+  "characterFrameSize": 48,
+  "tileOutputSize": 64,
+  "tiles": {
+    "grass": "tiles/grass.png",
+    "road": "tiles/road.png",
+    "wall": "tiles/wall.png",
+    "tree": "tiles/tree.png",
+    "crate": "tiles/crate.png",
+    "house_red": "tiles/house_red.png",
+    "house_blue": "tiles/house_blue.png"
+  },
+  "characters": {
+    "blue": {
+      "label": "藍寶",
+      "walk_down": "characters/blue/walk_down",
+      "walk_up": "characters/blue/walk_up",
+      "walk_left": "characters/blue/walk_left",
+      "walk_right": "characters/blue/walk_right"
+    },
+    "red": {
+      "label": "紅寶",
+      "walk_down": "characters/red/walk_down",
+      "walk_up": "characters/red/walk_up",
+      "walk_left": "characters/red/walk_left",
+      "walk_right": "characters/red/walk_right"
+    }
+  },
+  "effects": {
+    "bubble": "effects/bubble.png",
+    "explosion": "effects/explosion"
+  },
+  "items": {
+    "speed": "items/speed.png",
+    "power": "items/power.png",
+    "bubble": "items/bubble.png"
+  },
+  "playerBodySize": 28,
+  "playerOffsetX": 10,
+  "playerOffsetY": 14
+}
