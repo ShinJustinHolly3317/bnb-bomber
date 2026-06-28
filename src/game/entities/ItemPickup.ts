@@ -14,9 +14,9 @@ export class ItemPickup extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this)
     scene.physics.add.existing(this)
 
-    this.setDisplaySize(28, 28)
+    this.setDisplaySize(32, 32)
     this.setDepth(6)
-    this.body!.setSize(24, 24)
+    this.body!.setSize(28, 28)
 
     scene.tweens.add({
       targets: this,

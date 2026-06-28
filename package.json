@@ -3,17 +3,32 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "shared",
+    "server"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "dev:server": "npm run dev -w @bnb/server",
+    "build": "npm run build:shared && tsc && vite build",
+    "build:shared": "npm run build -w @bnb/shared",
+    "build:server": "npm run build:shared && npm run build -w @bnb/server",
+    "start:server": "npm run start -w @bnb/server",
     "preview": "vite preview",
     "assets:reference": "python3 scripts/prepare-reference-assets.py",
+    "assets:design": "python3 scripts/prepare-design-reference-assets.py",
+    "assets:pixel": "python3 scripts/generate-pixel-assets.py",
     "assets:style": "python3 scripts/generate-bnb-style-assets.py",
     "assets:bnb": "python3 scripts/prepare-bnb-assets.py",
     "assets": "python3 scripts/prepare-bnb-assets.py",
-    "qa": "node scripts/qa-gameplay.mjs",
+    "validate:map": "node scripts/validate-village10-layout.mjs",
+    "qa": "node scripts/validate-village10-layout.mjs && node scripts/qa-gameplay.mjs",
     "qa:duel": "node scripts/qa-duel.mjs",
-    "qa:health": "node scripts/health-check.mjs"
+    "qa:health": "node scripts/health-check.mjs",
+    "qa:visual": "node scripts/qa-visual-design.mjs",
+    "qa:lobby": "node scripts/qa-lobby-ux.mjs",
+    "qa:multiplayer": "node scripts/qa-multiplayer.mjs",
+    "qa:anim": "node scripts/qa-animation.mjs"
   },
   "devDependencies": {
     "playwright": "^1.60.0",

@@ -1,9 +1,19 @@
 /**
- * 村莊 10（村10）碰撞地圖
- * 修正版：四角出生區可通往中央馬路（對照 reference-village10.png 調整門口）
+ * 村莊 10（村10）— 載入凍結 layout + 遊戲語意 API
+ *
+ * Layout 來源：`village10-layout-v1.ts`（不可因美術改動而改這裡的格子）
+ * 設計文件：`.cursor/docs/GAME_DESIGN.md`
  */
 
 import { MAP_COLS, MAP_ROWS } from '../game/constants'
+
+import {
+  VILLAGE10_LAYOUT_V1,
+  VILLAGE10_LAYOUT_V1_SPAWN,
+  VILLAGE10_LAYOUT_VERSION,
+} from './village10-layout-v1'
+
+export { VILLAGE10_LAYOUT_VERSION, VILLAGE10_LAYOUT_V1_COUNTS } from './village10-layout-v1'
 
 export const TileKind = {
   GRASS: 1,
@@ -18,26 +28,11 @@ export const TileKind = {
 export type TileKindValue = (typeof TileKind)[keyof typeof TileKind]
 
 export interface Village10MapData {
+  layoutVersion: typeof VILLAGE10_LAYOUT_VERSION
   tiles: TileKindValue[][]
   spawnP1: { col: number; row: number }
   spawnP2: { col: number; row: number }
 }
-
-const VILLAGE10_CHARS = [
-  '..T#..RRRVY.Y..',
-  '.Y.#Y.RRR......',
-  '.##TY.BRRV..BYR',
-  'Y#Y#YYYRRVYYTYT',
-  'T#T#.YRRRVYYYYY',
-  '.....RRRRY....T',
-  'V.V.YYRRY.V...V',
-  'T.Y...YRRVT..T.',
-  'BYYYY.YRYYYYYYY',
-  '....YVRRRVYYY.Y',
-  'R.....RRRY.T..Y',
-  'R.....RRRRVY.Y.',
-  'B.Y.TVRRRVT..Y.',
-] as const
 
 const CHAR_TO_TILE: Record<string, TileKindValue> = {
   '.': TileKind.GRASS,
@@ -49,8 +44,8 @@ const CHAR_TO_TILE: Record<string, TileKindValue> = {
   B: TileKind.BLUE_ROOF,
 }
 
-function parseGrid(): TileKindValue[][] {
-  return VILLAGE10_CHARS.map((line) =>
+function parseGrid(lines: readonly string[]): TileKindValue[][] {
+  return lines.map((line) =>
     line.split('').map((ch) => {
       const tile = CHAR_TO_TILE[ch]
       if (!tile) throw new Error(`未知地圖字元: ${ch}`)
@@ -60,15 +55,17 @@ function parseGrid(): TileKindValue[][] {
 }
 
 export function buildVillage10Map(): Village10MapData {
-  const tiles = parseGrid()
+  const tiles = parseGrid(VILLAGE10_LAYOUT_V1)
   if (tiles.length !== MAP_ROWS || tiles[0].length !== MAP_COLS) {
-    throw new Error('村10 地圖尺寸不符')
+    throw new Error(
+      `村10 layout ${VILLAGE10_LAYOUT_VERSION} 尺寸不符（預期 ${MAP_COLS}×${MAP_ROWS}）`,
+    )
   }
   return {
+    layoutVersion: VILLAGE10_LAYOUT_VERSION,
     tiles,
-    // 避開 col 0 / col 14 世界邊界，否則貼牆時垂直移動會卡死
-    spawnP1: { col: 2, row: 10 },
-    spawnP2: { col: 12, row: 1 },
+    spawnP1: { ...VILLAGE10_LAYOUT_V1_SPAWN.spawnP1 },
+    spawnP2: { ...VILLAGE10_LAYOUT_V1_SPAWN.spawnP2 },
   }
 }
 

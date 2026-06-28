@@ -10,10 +10,25 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.join(__dirname, '..')
-const BASE_URL = process.env.QA_URL || 'http://localhost:5177/'
 
 const issues = []
 const passes = []
+
+async function resolveBaseUrl() {
+  if (process.env.QA_URL) return process.env.QA_URL
+  for (const port of [5173, 5174, 5175, 5176, 5177]) {
+    const url = `http://localhost:${port}/`
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(1500) })
+      if (!res.ok) continue
+      const html = await res.text()
+      if (html.includes('game-container')) return url
+    } catch {
+      /* next */
+    }
+  }
+  throw new Error('找不到 bnb-bomber dev server（請先 npm run dev）')
+}
 
 function pass(msg) {
   passes.push(msg)
@@ -32,6 +47,16 @@ async function sleep(ms) {
 }
 
 async function main() {
+  const BASE_URL = await resolveBaseUrl()
+
+  // 0. 村10 layout 不可跑版
+  try {
+    execSync('npm run validate:map', { cwd: ROOT, stdio: 'pipe' })
+    pass('village10 layout v1 counts')
+  } catch (e) {
+    fail(`layout validation: ${e.stderr?.toString().slice(0, 200) || e.message}`)
+  }
+
   // 1. 建置
   try {
     execSync('npm run build', { cwd: ROOT, stdio: 'pipe' })
@@ -55,7 +80,7 @@ async function main() {
   const manifest = JSON.parse(
     readFileSync(path.join(ROOT, 'public/assets/sprite-manifest.json'), 'utf8'),
   )
-  if (manifest.source !== 'reference' && manifest.source !== 'bnb' && manifest.source !== 'bnb-style') {
+  if (manifest.source !== 'reference' && manifest.source !== 'bnb' && manifest.source !== 'bnb-style' && manifest.source !== 'pixel' && manifest.source !== 'design-reference') {
     warn(`manifest source=${manifest.source}`)
   } else {
     pass(`manifest source=${manifest.source}`)
@@ -95,7 +120,15 @@ async function main() {
   else pass('no sprite-manifest JSON errors')
 
   await page.keyboard.press('Enter')
-  await sleep(1500)
+  await sleep(600)
+  state = await page.evaluate(() => window.bnbState ?? null)
+  if (state?.scene === 'lobby') pass('lobby scene')
+  else fail(`expected lobby, got ${state?.scene}`)
+
+  await page.keyboard.press('KeyQ')
+  await sleep(400)
+  await page.keyboard.press('Enter')
+  await sleep(1200)
   state = await page.evaluate(() => window.bnbState ?? null)
   if (state?.scene === 'duel') pass('duel scene')
   else fail(`expected duel, got ${state?.scene}`)

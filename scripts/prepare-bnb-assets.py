@@ -144,6 +144,28 @@ def kenney_fallback() -> None:
         subprocess.run([sys.executable, str(kenney)], check=True)
 
 
+def design_reference_fallback() -> None:
+    """從 design-references/pixel-*.png 萃取（對齊概念圖）"""
+    import subprocess
+
+    script = ROOT / 'scripts' / 'prepare-design-reference-assets.py'
+    if script.is_file():
+        subprocess.run([sys.executable, str(script)], check=True)
+        return
+    pixel_fallback()
+
+
+def pixel_fallback() -> None:
+    """像素風素材（預設）"""
+    import subprocess
+
+    gen = ROOT / 'scripts' / 'generate-pixel-assets.py'
+    if gen.is_file():
+        subprocess.run([sys.executable, str(gen)], check=True)
+        return
+    bnb_style_fallback()
+
+
 def bnb_style_fallback() -> None:
     """繪製 BnB homage 完整素材（預設，非截圖）"""
     import subprocess
@@ -200,8 +222,8 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     cfg_path = RAW / 'manifest.json'
     if not cfg_path.is_file():
-        print('缺少 assets/raw/bnb/manifest.json，改用 bnb-style 素材')
-        bnb_style_fallback()
+        print('缺少 assets/raw/bnb/manifest.json，改用 design-reference 概念圖素材')
+        design_reference_fallback()
         return
 
     cfg = load_json(cfg_path)
@@ -210,8 +232,8 @@ def main() -> None:
     tile_size = int(cfg.get('tileOutputSize', 64))
 
     if not has_raw_tiles(cfg):
-        print('raw/bnb 尚無 tile PNG，改用 bnb-style 完整美術')
-        bnb_style_fallback()
+        print('raw/bnb 尚無 tile PNG，改用 design-reference 概念圖素材')
+        design_reference_fallback()
         return
 
     print('處理爆爆王 raw 素材…')

@@ -1,6 +1,9 @@
 export const AssetKeys = {
   PLAYER_BLUE: 'player_blue',
   PLAYER_RED: 'player_red',
+  PLAYER_YELLOW: 'player_yellow',
+  PLAYER_PINK: 'player_pink',
+  PLAYER_PURPLE: 'player_purple',
   TILE_GRASS: 'tile_grass',
   TILE_ROAD: 'tile_road',
   TILE_WALL: 'tile_wall',

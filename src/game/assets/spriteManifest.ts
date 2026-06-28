@@ -1,6 +1,6 @@
 /** 由 scripts/prepare-bnb-assets.py 產生，BootScene 執行期讀取 */
 export interface SpriteManifest {
-  source: 'bnb' | 'kenney'
+  source: 'bnb' | 'kenney' | 'bnb-style' | 'pixel' | 'design-reference'
   characterFrameWidth: number
   characterFrameHeight: number
   walkFramesPerDirection: number
@@ -14,17 +14,17 @@ export interface SpriteManifest {
 }
 
 export const DEFAULT_SPRITE_MANIFEST: SpriteManifest = {
-  source: 'kenney',
-  characterFrameWidth: 32,
-  characterFrameHeight: 32,
+  source: 'design-reference',
+  characterFrameWidth: 64,
+  characterFrameHeight: 64,
   walkFramesPerDirection: 4,
-  explosionFrameWidth: 32,
-  explosionFrameHeight: 32,
+  explosionFrameWidth: 48,
+  explosionFrameHeight: 48,
   explosionFrames: 4,
-  playerBodySize: 22,
-  playerOffsetX: 5,
-  playerOffsetY: 8,
-  tileDisplaySize: 64,
+  playerBodySize: 34,
+  playerOffsetX: 15,
+  playerOffsetY: 18,
+  tileDisplaySize: 40,
 }
 
 export function idleFrameForFacing(

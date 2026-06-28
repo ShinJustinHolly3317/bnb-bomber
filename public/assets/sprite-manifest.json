@@ -1,13 +1,13 @@
 {
-  "source": "bnb-style",
-  "characterFrameWidth": 40,
-  "characterFrameHeight": 40,
+  "source": "design-reference",
+  "characterFrameWidth": 64,
+  "characterFrameHeight": 64,
   "walkFramesPerDirection": 4,
-  "explosionFrameWidth": 40,
-  "explosionFrameHeight": 40,
+  "explosionFrameWidth": 48,
+  "explosionFrameHeight": 48,
   "explosionFrames": 4,
-  "playerBodySize": 20,
-  "playerOffsetX": 10,
-  "playerOffsetY": 12,
-  "tileDisplaySize": 64
+  "playerBodySize": 34,
+  "playerOffsetX": 15,
+  "playerOffsetY": 18,
+  "tileDisplaySize": 40
 }

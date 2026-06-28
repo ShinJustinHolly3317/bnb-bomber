@@ -6,8 +6,25 @@ import {
   type SpriteManifest,
   walkAnimStart,
 } from '../assets/spriteManifest'
+import { CHARACTER_LIST } from '../characters/CharacterCatalog'
 
 const MANIFEST_KEY = 'sprite-manifest'
+
+const PLAYER_TEXTURES = [
+  AssetKeys.PLAYER_BLUE,
+  AssetKeys.PLAYER_RED,
+  AssetKeys.PLAYER_YELLOW,
+  AssetKeys.PLAYER_PINK,
+  AssetKeys.PLAYER_PURPLE,
+]
+
+const PORTRAITS = [
+  'portrait_dao',
+  'portrait_bazzi',
+  'portrait_maro',
+  'portrait_nana',
+  'portrait_dizni',
+]
 
 function registerWalkAnims(
   scene: Phaser.Scene,
@@ -31,7 +48,7 @@ function registerWalkAnims(
         start,
         end: start + n - 1,
       }),
-      frameRate: 8,
+      frameRate: 10,
       repeat: -1,
     })
   })
@@ -51,14 +68,13 @@ export class BootScene extends Phaser.Scene {
       (this.cache.json.get(MANIFEST_KEY) as SpriteManifest | undefined) ??
       DEFAULT_SPRITE_MANIFEST
 
-    this.load.spritesheet(AssetKeys.PLAYER_BLUE, '/assets/player_blue.png', {
-      frameWidth: manifest.characterFrameWidth,
-      frameHeight: manifest.characterFrameHeight,
+    PLAYER_TEXTURES.forEach((key) => {
+      this.load.spritesheet(key, `/assets/${key}.png`, {
+        frameWidth: manifest.characterFrameWidth,
+        frameHeight: manifest.characterFrameHeight,
+      })
     })
-    this.load.spritesheet(AssetKeys.PLAYER_RED, '/assets/player_red.png', {
-      frameWidth: manifest.characterFrameWidth,
-      frameHeight: manifest.characterFrameHeight,
-    })
+
     this.load.image(AssetKeys.TILE_GRASS, '/assets/tile_grass.png')
     this.load.image(AssetKeys.TILE_ROAD, '/assets/tile_road.png')
     this.load.image(AssetKeys.TILE_WALL, '/assets/tile_wall.png')
@@ -75,9 +91,19 @@ export class BootScene extends Phaser.Scene {
     this.load.image('item_power', '/assets/item_power.png')
     this.load.image('item_bubble', '/assets/item_bubble.png')
 
+    PORTRAITS.forEach((key) => {
+      this.load.image(key, `/assets/${key}.png`)
+    })
+
+    this.load.image('lobby_bg', '/assets/lobby_bg.png')
+    this.load.image('menu_bg', '/assets/menu_bg.png')
+
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       this.registry.set('spriteManifest', manifest)
 
+      CHARACTER_LIST.forEach((char) => {
+        registerWalkAnims(this, char.texture, char.animPrefix, manifest)
+      })
       registerWalkAnims(this, AssetKeys.PLAYER_BLUE, 'p1', manifest)
       registerWalkAnims(this, AssetKeys.PLAYER_RED, 'p2', manifest)
 

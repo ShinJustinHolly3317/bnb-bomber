@@ -12,6 +12,7 @@ import {
   MAX_BUBBLE_POWER,
   MAX_BUBBLES_CAP,
   MAX_MOVE_SPEED,
+  PLAYER_DISPLAY_SIZE,
   PLAYER_MAX_HP,
   PLAYER_MOVE_SPEED,
   SPEED_BOOST,
@@ -65,8 +66,8 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this)
     scene.physics.add.existing(this)
 
-    const fw = this.spriteManifest.characterFrameWidth
-    this.setDisplaySize(fw, fw)
+    // 顯示尺寸縮到接近格子大小，人物不再比箱子大一截
+    this.setDisplaySize(PLAYER_DISPLAY_SIZE, PLAYER_DISPLAY_SIZE)
 
     this.setCollideWorldBounds(true)
     this.setBounce(0)
@@ -81,6 +82,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
       this.spriteManifest.playerOffsetY,
     )
     this.setDepth(10)
+    this.setFlipX(false)
     this.anims.stop()
     this.setFrame(0)
   }
@@ -145,7 +147,10 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
         right: AnimKeys.WALK_RIGHT,
       }[this.facing]
       const anim = `${this.walkPrefix}-${facingKey}`
+      this.setFlipX(false)
       if (this.anims.currentAnim?.key !== anim) {
+        this.play(anim, true)
+      } else if (!this.anims.isPlaying) {
         this.play(anim, true)
       }
     } else {

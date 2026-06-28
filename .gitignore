@@ -28,3 +28,7 @@ assets/raw/bnb/tiles/
 assets/raw/bnb/characters/
 assets/raw/bnb/effects/
 assets/raw/bnb/items/
+
+# Python 快取
+__pycache__/
+*.pyc

@@ -3,7 +3,7 @@
  * 場景：雙方各自走到地圖中央 → P1 轟炸 P2 直到獲勝 → gameover → rematch
  *
  * 前一輪發現的 64×64 碰撞體 bug 已修復（碰撞體縮回 40×40），
- * 本版改為直接行走驗證，並把舊夾點 (7,9)→(7,8)、(10,1)→(9,1) 當回歸檢查。
+ * 本版改為直接行走驗證，並把舊夾點 (7,9)→(7,8)、(12,1)→(10,1) 當回歸檢查。
  */
 import { chromium } from 'playwright'
 
@@ -158,6 +158,8 @@ async function main() {
     throw new Error('abort')
   }
   await page.keyboard.press('Enter')
+  await sleep(600)
+  await page.keyboard.press('s')
   const duelState = await waitFor(page, (s) => s.scene === 'duel' && s.fighters?.length === 2, 10000)
   if (!duelState) {
     record('Step 1: Enter 進入對戰', false, '沒進入 duel scene')
@@ -184,15 +186,15 @@ async function main() {
   record('Step 2: P1 抵達中央區', w.ok && p1Dist <= TILE * 1.5, `P1 (${p1Pos.x},${p1Pos.y})，離中心 ${p1Dist.toFixed(0)}px`)
   if (!w.ok) throw new Error('abort')
 
-  // ---- Step 3: P2 走到中心附近 (7,5)，含回歸檢查 (10,1)→(9,1)→(8,1) ----
-  w = await walkPath(page, 1, [T(12, 1), T(11, 1), T(10, 1)], 'P2')
+  // ---- Step 3: P2 走到中心附近 (7,5)，含回歸檢查 (12,1)→…→(8,1) ----
+  w = await walkPath(page, 1, [T(12, 1), T(11, 1), T(10, 1), T(9, 1), T(8, 1)], 'P2')
   if (!w.ok) {
-    record('Step 3 前置: P2 走到 (10,1)', false, w.reason)
+    record('Step 3 前置: P2 從 spawn (12,1) 出發', false, w.reason)
     throw new Error('abort')
   }
   // 回歸檢查：舊 bug 在 (9,1) 被 (9,0)/(9,2) 樹夾死，P2 永遠到不了中央
-  const reg2 = await walkPath(page, 1, [T(10, 1), T(9, 1), T(8, 1)], 'P2-回歸')
-  record('回歸: P2 (10,1)→(9,1)→(8,1) 直接通過（舊夾點）', reg2.ok, reg2.ok ? '樹縫可通行' : reg2.reason)
+  const reg2 = await walkPath(page, 1, [T(12, 1), T(11, 1), T(10, 1), T(9, 1), T(8, 1)], 'P2-回歸')
+  record('回歸: P2 (12,1)→(10,1) 樹縫可通行', reg2.ok, reg2.ok ? '舊夾點 OK' : reg2.reason)
   if (!reg2.ok) throw new Error('abort')
 
   // 南下 road col 8 到 (8,5)，西移到 (7,5)（離中心 40px，容差內）

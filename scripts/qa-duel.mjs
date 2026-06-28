@@ -31,6 +31,8 @@ async function main() {
   else passes.push('Menu scene active')
 
   await page.keyboard.press('Enter')
+  await sleep(600)
+  await page.keyboard.press('s')
   await sleep(1200)
 
   for (let i = 0; i < 10; i++) {

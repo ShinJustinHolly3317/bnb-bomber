@@ -4,7 +4,9 @@ import { VIEW_HEIGHT, VIEW_WIDTH } from './constants'
 import { BootScene } from './scenes/BootScene'
 import { DuelScene } from './scenes/DuelScene'
 import { GameOverScene } from './scenes/GameOverScene'
+import { LobbyScene } from './scenes/LobbyScene'
 import { MenuScene } from './scenes/MenuScene'
+import { RoomBrowserScene } from './scenes/RoomBrowserScene'
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -20,7 +22,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, MenuScene, DuelScene, GameOverScene],
+  scene: [BootScene, MenuScene, RoomBrowserScene, LobbyScene, DuelScene, GameOverScene],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

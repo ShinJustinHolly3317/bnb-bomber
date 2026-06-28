@@ -1,24 +1,25 @@
 # bnb-bomber — Agent Handoff
 
-> 最後更新：2026-06-13  
+> 最後更新：2026-06-13（OG 房間大廳 UI 重設計）  
 > 目的：讓新 session 的 agent 能無縫接續，復刻台灣線上遊戲「爆爆王」村10 地圖 + 本地雙人 1v1 對戰。
 
 ---
 
 ## 專案摘要
 
-**bnb-bomber** 是瀏覽器端的爆爆王 homage：Phaser 3 + Vite + TypeScript。MVP 範圍已定——**村10 地圖、同鍵盤雙人對戰、完整道具規則**。核心玩法與 QA 已跑通；美術目前是程式生成的 `bnb-style`，視覺還有提升空間。
+**bnb-bomber** 是瀏覽器端的爆爆王 homage：Phaser 3 + Vite + TypeScript。MVP：**村10、大廳 mock 配對（6 人）、本地 1v1 對戰、四 OG 角色、像素美術**。
 
 | 項目 | 決策 |
 |------|------|
 | 平台 | Web（Vite dev server） |
 | 引擎 | Phaser 3 + Arcade Physics |
-| 模式 | 本地 hotseat 1v1 |
-| 地圖 | 村10（`src/data/village10-map.ts`） |
-| 角色 | P1 藍寶、P2 睏寶 |
-| 操作 | P1: WASD + Space；P2: 方向鍵 + Enter |
+| 模式 | 本地 hotseat 1v1（大廳可 mock 6 人，對戰仍 2 人） |
+| 地圖 | 村10 layout **v1 凍結**（`src/data/village10-layout-v1.ts`） |
+| 操作 | P1 WASD+Space；P2 方向鍵+Enter；大廳 `1-4` 選角、`Q`/邀請電腦、`Enter`/準備 開始 |
 | 道具 | S 加速、P 威力、B 水球+ |
-| 美術 | 預設 `bnb-style` 程式繪製（非截圖 crop） |
+| 美術 | 預設 **pixel** 程式像素風（`generate-pixel-assets.py`） |
+| 角色 | 藍寶、睏寶、紅寶、囡囡（四方向 walk） |
+| 流程 | Menu → **Lobby**（6 人 mock）→ Duel → GameOver |
 
 設計階段用 `/grill-me` 收斂過需求；細節不再重複，見下方引用。
 
@@ -26,17 +27,17 @@
 
 ## 目前狀態（可玩）
 
-- Menu → Duel → GameOver → Rematch 流程完整
-- 村10 地圖載入、泡泡放置/爆炸、道具、HP、勝負判定（含平手）
-- 美術 pipeline 預設走 `generate-bnb-style-assets.py`
-- QA 腳本全綠（movement、bubble、中央對決場景、health check）
+- Menu → Lobby → Duel → GameOver → Rematch 完整
+- 四角色像素 spritesheet + 村10 重排版
+- 美術 pipeline 預設 `generate-pixel-assets.py`（`source: pixel`）
+- QA health check PASS
 
 **尚未做 / 已知缺口：**
 
-- 非 git repo（無 version control）
-- 美術仍是 homage 級別，離官方素材有差距
-- 只有 2 角色、1 張地圖、無線上/AI/音效
-- `design-references/` 裡部分參考圖可能不在 workspace（glob 只看到 README）
+- 非 git repo
+- 真實 WebSocket 多人配對 / 6 人同場對戰
+- 音效、商城等完整大廳功能
+- 像素角色仍可再貼近官方（目前為 homage 程式像素）
 
 ---
 
@@ -154,6 +155,7 @@ Debug：`window.bnbState` 暴露 scene、fighters（hp/x/y/vx/vy/trapped/dead）
 
 ## 引用（勿在此重複全文）
 
+- 設計紀錄：`.cursor/docs/GAME_DESIGN.md`（**layout 凍結、開發必讀**）
 - Agent 變更紀錄：`.cursor/agent-changelog/CHANGELOG.md`
 - 人物參考說明：`design-references/characters/README.md`
 - Raw 素材放置：`assets/raw/bnb/README.md`

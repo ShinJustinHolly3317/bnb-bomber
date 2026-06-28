@@ -1,0 +1,6 @@
+# Agent：開發前請讀
+
+**遊戲設計文件（layout / 規則 / 檢查清單）：** [`.cursor/docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md)
+
+- 村10 地圖 layout **v1 已凍結** — 美術 PR 不可改 `src/data/village10-layout-v*.ts` 除非 bump 版本
+- 改動後跑：`npm run validate:map` → `npm run qa:health`

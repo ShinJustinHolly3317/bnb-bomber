@@ -9,6 +9,7 @@ import {
   TileKind,
 } from '../../data/village10-map'
 import { AssetKeys } from '../assets/AssetKeys'
+import { CHARACTER_BY_ID } from '../characters/CharacterCatalog'
 import {
   BUBBLE_DAMAGE,
   CRATE_ITEM_DROP_CHANCE,
@@ -28,6 +29,9 @@ import {
   type ItemKindValue,
 } from '../items/ItemKind'
 import { setBnbState } from '../debug/bnbState'
+import { createEmptyLobby, type LobbyState } from '../lobby/LobbyState'
+import { getGameClient } from '../net/GameClient'
+import { OnlineDuelController } from '../net/OnlineDuelController'
 import { tileToWorld, worldToTile } from '../utils/grid'
 
 const TILE_TEXTURE: Record<TileKindValue, string> = {
@@ -47,13 +51,29 @@ export class DuelScene extends Phaser.Scene {
   private fighters: Fighter[] = []
   private hpTexts: Phaser.GameObjects.Text[] = []
   private gameEnded = false
+  private explosionsSpawned = 0
   private mapOverview = false
+  private onlineController: OnlineDuelController | null = null
 
   constructor() {
     super({ key: 'DuelScene' })
   }
 
   create(): void {
+    this.cameras.main.fadeIn(200, 0, 0, 0)
+
+    if (this.registry.get('playMode') === 'online') {
+      const client = getGameClient()
+      this.onlineController = new OnlineDuelController(
+        this,
+        client,
+        client.playerId,
+      )
+      this.onlineController.create()
+      this.events.once('shutdown', () => this.onlineController?.destroy())
+      return
+    }
+
     this.gameEnded = false
     this.mapOverview = false
     this.fighters = []
@@ -84,27 +104,42 @@ export class DuelScene extends Phaser.Scene {
       Phaser.Input.Keyboard.KeyCodes.ENTER,
     )
 
+    const lobby =
+      (this.registry.get('lobbyState') as LobbyState | undefined) ??
+      createEmptyLobby()
+    const slot0 = lobby.slots.find((s) => s.occupied) ?? lobby.slots[0]
+    const slot1 =
+      lobby.slots.filter((s) => s.occupied)[1] ?? {
+        ...lobby.slots[1],
+        occupied: true,
+        characterId: 'bazzi' as const,
+        name: 'P2',
+      }
+
+    const p1Char = CHARACTER_BY_ID[slot0.characterId]
+    const p2Char = CHARACTER_BY_ID[slot1.characterId]
+
     const p1 = new Fighter(
       this,
       p1Pos.x,
       p1Pos.y,
-      AssetKeys.PLAYER_BLUE,
+      p1Char.texture,
       1,
-      'P1 藍寶',
+      `P1 ${p1Char.label}`,
       wasd,
       spaceKey,
-      'p1',
+      p1Char.animPrefix,
     )
     const p2 = new Fighter(
       this,
       p2Pos.x,
       p2Pos.y,
-      AssetKeys.PLAYER_RED,
+      p2Char.texture,
       2,
-      'P2 紅寶',
+      `P2 ${p2Char.label}`,
       arrows,
       enterKey,
-      'p2',
+      p2Char.animPrefix,
     )
 
     p1.onPlaceBubble = (f) => this.tryPlaceBubble(f)
@@ -131,24 +166,24 @@ export class DuelScene extends Phaser.Scene {
 
     this.hpTexts = this.fighters.map((_f, i) =>
       this.add
-        .text(12, 12 + i * 36, '', {
-          fontFamily: 'system-ui, sans-serif',
+        .text(12, 12 + i * 40, '', {
+          fontFamily: 'monospace',
           fontSize: '14px',
-          color: '#ffffff',
-          backgroundColor: '#1a237ecc',
-          padding: { x: 10, y: 6 },
+          color: '#fffde7',
+          backgroundColor: '#5d4037cc',
+          padding: { x: 8, y: 5 },
         })
         .setScrollFactor(0)
         .setDepth(200),
     )
 
     this.add
-      .text(12, VIEW_HEIGHT - 40, 'M 全圖  |  S/Enter 放水球  |  撿 S加速 P威力 B水球+', {
-        fontFamily: 'system-ui, sans-serif',
+      .text(12, VIEW_HEIGHT - 40, 'M 全圖 | S/Enter 放球 | S加速 P威力 B水球+', {
+        fontFamily: 'monospace',
         fontSize: '13px',
-        color: '#e0e0e0',
-        backgroundColor: '#1a237eaa',
-        padding: { x: 10, y: 6 },
+        color: '#fffde7',
+        backgroundColor: '#5d4037cc',
+        padding: { x: 8, y: 5 },
       })
       .setScrollFactor(0)
       .setDepth(200)
@@ -166,20 +201,32 @@ export class DuelScene extends Phaser.Scene {
   private publishState(): void {
     setBnbState({
       scene: 'duel',
+      bubbles: this.fighters.reduce((sum, f) => sum + f.activeBubbleCount, 0),
+      explosionsSpawned: this.explosionsSpawned,
       fighters: this.fighters.map((f) => ({
         label: f.label,
         hp: f.hp,
         dead: f.dead,
         trapped: f.trapped,
+        facing: f.facing,
         x: Math.round(f.x),
         y: Math.round(f.y),
         vx: Math.round(f.body?.velocity.x ?? 0),
         vy: Math.round(f.body?.velocity.y ?? 0),
+        anim: {
+          key: f.anims.currentAnim?.key ?? null,
+          frame: f.anims.currentFrame?.index ?? 0,
+          isPlaying: f.anims.isPlaying,
+        },
       })),
     })
   }
 
   update(): void {
+    if (this.onlineController) {
+      this.onlineController.update()
+      return
+    }
     if (this.gameEnded) return
 
     this.fighters.forEach((f) => f.update())
@@ -332,6 +379,7 @@ export class DuelScene extends Phaser.Scene {
       fx.setDepth(15)
       fx.setAlpha(0.85)
       fx.play('explode')
+      this.explosionsSpawned += 1
       this.time.delayedCall(280, () => fx.destroy())
     })
   }
