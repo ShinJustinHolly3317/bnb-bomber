@@ -8,6 +8,10 @@ export interface BnbDebugState {
   // 場上水球數量 + 累積爆炸動畫次數（供水球/爆炸動畫測試）
   bubbles?: number
   explosionsSpawned?: number
+  // 場上木箱數量（供「箱子密度」回歸測試）
+  crates?: number
+  // 本機角色實際顯示寬度（px），供「人物不要又變太小」回歸測試
+  playerDisplaySize?: number
   lobby?: {
     occupied: number
     localCharacter: string

@@ -9,9 +9,12 @@ export const VIEW_HEIGHT = 540
 export const PLAYER_MOVE_SPEED = 130
 export const PLAYER_BODY_SIZE = 22
 
-// 角色顯示尺寸：刻意接近 TILE_SIZE(40)，讓人物視覺與箱子差不多大，
-// 物理碰撞體也會等比縮小，走道縫隙更順暢、不卡角。
-export const PLAYER_DISPLAY_SIZE = 46
+// 角色顯示尺寸：人物含透明邊框，故顯示尺寸要略大於格子，
+// 視覺上才會「跟地板格子差不多大」。
+export const PLAYER_DISPLAY_SIZE = 60
+// 實際碰撞體（世界座標 px）：與顯示尺寸「脫鉤」，固定維持小一點，
+// 這樣人物看起來大、但走縫隙仍順暢不卡角。
+export const PLAYER_COLLISION_SIZE = 26
 
 export const BUBBLE_FUSE_MS = 2500
 export const BASE_BUBBLE_POWER = 2
@@ -29,4 +32,4 @@ export const CAMERA_LERP = 0.1
 export const GAMEPLAY_ZOOM = 1
 export const OVERVIEW_ZOOM = 0.82
 
-export const CRATE_ITEM_DROP_CHANCE = 0.35
+export const CRATE_ITEM_DROP_CHANCE = 0.7

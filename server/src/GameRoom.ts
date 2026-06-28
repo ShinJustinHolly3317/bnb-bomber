@@ -108,13 +108,18 @@ export class GameRoom {
       case 'setReady':
         this.handleSetReady(playerId, msg.ready)
         break
-      case 'input':
+      case 'input': {
         if (this.phase !== 'match') return
+        // client 以 ~60fps 上傳、server 每 tick(50ms) 才消化，一個 tick 內會收到
+        // 多筆 input 並互相覆蓋。放球只在按下那一幀 placeBubble=true，若被後續
+        // false 覆蓋就會「常常放不出來」→ 這裡對 placeBubble 做 OR 合併直到 tick 取用。
+        const prev = this.pendingInputs.get(playerId)
         this.pendingInputs.set(playerId, {
           dir: msg.dir,
-          placeBubble: msg.placeBubble,
+          placeBubble: msg.placeBubble || prev?.placeBubble || false,
         })
         break
+      }
       case 'leaveRoom':
         this.removePlayer(playerId)
         break

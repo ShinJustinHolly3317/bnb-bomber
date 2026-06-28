@@ -10,10 +10,10 @@ import { CHARACTER_LIST } from '../characters/CharacterCatalog'
 
 const MANIFEST_KEY = 'sprite-manifest'
 
+// player_yellow / portrait_maro 與紅色 bazzi 重複，已從角色名單移除，不再載入
 const PLAYER_TEXTURES = [
   AssetKeys.PLAYER_BLUE,
   AssetKeys.PLAYER_RED,
-  AssetKeys.PLAYER_YELLOW,
   AssetKeys.PLAYER_PINK,
   AssetKeys.PLAYER_PURPLE,
 ]
@@ -21,7 +21,6 @@ const PLAYER_TEXTURES = [
 const PORTRAITS = [
   'portrait_dao',
   'portrait_bazzi',
-  'portrait_maro',
   'portrait_nana',
   'portrait_dizni',
 ]

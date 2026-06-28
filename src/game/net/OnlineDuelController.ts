@@ -364,6 +364,14 @@ export class OnlineDuelController {
       .setName(key)
   }
 
+  private countCrates(): number {
+    let n = 0
+    for (const row of this.mapTiles) {
+      for (const kind of row) if (kind === TileKind.CRATE) n++
+    }
+    return n
+  }
+
   private publishState(): void {
     const snap = this.client.lastSnapshot
     if (!snap) return
@@ -372,6 +380,10 @@ export class OnlineDuelController {
       online: true,
       bubbles: this.bubbleSprites.size,
       explosionsSpawned: this.explosionsSpawned,
+      crates: this.countCrates(),
+      playerDisplaySize: Math.round(
+        [...this.fighterSprites.values()][0]?.displayWidth ?? 0,
+      ),
       fighters: snap.fighters.map((f) => {
         const sprite = this.fighterSprites.get(f.playerId)
         return {

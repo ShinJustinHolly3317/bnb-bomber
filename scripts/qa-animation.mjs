@@ -228,6 +228,28 @@ async function assertBubbleAndExplosion(page, fighterIndex, modeLabel) {
   }
 }
 
+/**
+ * 場景不變量：箱子密度（x2）+ 人物顯示尺寸（不要又變太小）。
+ * 對應 bug 回報：箱子太少、人物比例偏小。
+ */
+async function assertSceneInvariants(page, modeLabel) {
+  const s = await getState(page)
+  if ((s.crates ?? 0) >= 100) {
+    pass(`${modeLabel} 箱子密度足夠（crates=${s.crates}）`)
+  } else {
+    fail(`${modeLabel} 箱子太少（crates=${s.crates}，應 >=100）`)
+  }
+  // 地板格 40px；人物含透明邊框，顯示寬度應 >= 40 才不會看起來偏小
+  if ((s.playerDisplaySize ?? 0) >= 40) {
+    pass(`${modeLabel} 人物顯示尺寸足夠（${s.playerDisplaySize}px ≈ 格子）`)
+  } else {
+    fail(`${modeLabel} 人物顯示偏小（${s.playerDisplaySize}px，應 >=40）`)
+  }
+}
+
+// 放水球「可靠度」（連線輸入合併）改由 scripts/qa-server-input.mjs 以確定性方式驗證，
+// 不在瀏覽器內重複測（瀏覽器內密集放球會被自己水球炸死、產生假失敗）。
+
 // ── 離線練習 ─────────────────────────────────────────────────────────────────
 async function testOffline(browser) {
   const page = await newPage(browser, 'offline')
@@ -248,6 +270,7 @@ async function testOffline(browser) {
     return
   }
   pass('離線進入對戰')
+  await assertSceneInvariants(page, '離線')
   await assertWalkAllDirs(page, 0, '離線')
   await assertBubbleAndExplosion(page, 0, '離線')
   await page.close()
@@ -326,6 +349,7 @@ async function testOnline(browser) {
   }
   pass('連線進入對戰（雙人）')
 
+  await assertSceneInvariants(session.a, '連線(本機)')
   // 主要驗收：連線模式本機角色走路動畫（這就是先前壞掉的地方）
   await assertWalkAllDirs(session.a, 0, '連線(本機)')
   // 連線水球/爆炸動畫（先前連線端完全沒有爆炸動畫）

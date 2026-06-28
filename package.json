@@ -28,7 +28,10 @@
     "qa:visual": "node scripts/qa-visual-design.mjs",
     "qa:lobby": "node scripts/qa-lobby-ux.mjs",
     "qa:multiplayer": "node scripts/qa-multiplayer.mjs",
-    "qa:anim": "node scripts/qa-animation.mjs"
+    "qa:anim": "node scripts/qa-animation.mjs",
+    "qa:regression": "npm run build:shared && node scripts/qa-regression.mjs",
+    "qa:server-input": "npm run build:server && node scripts/qa-server-input.mjs",
+    "qa:bugfixes": "npm run qa:regression && npm run qa:server-input && node scripts/qa-animation.mjs"
   },
   "devDependencies": {
     "playwright": "^1.60.0",

@@ -21,7 +21,7 @@ export const MAX_BUBBLES_CAP = 4
 export const SPEED_BOOST = 45
 export const MAX_MOVE_SPEED = 220
 
-export const CRATE_ITEM_DROP_CHANCE = 0.35
+export const CRATE_ITEM_DROP_CHANCE = 0.7
 
 export const LOBBY_MAX_PLAYERS = 2
 export const RECONNECT_MS = 30_000

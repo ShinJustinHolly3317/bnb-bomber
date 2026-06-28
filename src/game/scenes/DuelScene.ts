@@ -198,11 +198,21 @@ export class DuelScene extends Phaser.Scene {
     this.publishState()
   }
 
+  private countCrates(): number {
+    let n = 0
+    for (const row of this.mapTiles) {
+      for (const kind of row) if (kind === TileKind.CRATE) n++
+    }
+    return n
+  }
+
   private publishState(): void {
     setBnbState({
       scene: 'duel',
       bubbles: this.fighters.reduce((sum, f) => sum + f.activeBubbleCount, 0),
       explosionsSpawned: this.explosionsSpawned,
+      crates: this.countCrates(),
+      playerDisplaySize: Math.round(this.fighters[0]?.displayWidth ?? 0),
       fighters: this.fighters.map((f) => ({
         label: f.label,
         hp: f.hp,

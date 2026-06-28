@@ -16,10 +16,8 @@ import {
   BNB_ROOM_COLORS,
   BNB_ROOM_LAYOUT,
   CHAR_GRID,
-  TEAM_COLORS,
   charCellCenter,
   chatRect,
-  colorSwatchCenter,
   drawGlossyButton,
   drawGlossyPanel,
   drawSectionRule,
@@ -85,7 +83,7 @@ export class LobbyScene extends Phaser.Scene {
     this.drawChrome()
     this.buildPlayerSlots()
     this.buildCharacterPicker()
-    this.buildColorPicker()
+    // 隊伍選色尚未接到實際角色顏色（選了沒效果），先移除避免誤導
     this.buildActionButtons()
     this.buildExitButton()
     this.buildToast()
@@ -260,15 +258,6 @@ export class LobbyScene extends Phaser.Scene {
       .setDepth(DEPTH.UI)
 
     this.add
-      .text(lx, panel.y + 148, '隊伍選擇', {
-        fontFamily: FONT,
-        fontSize: '13px',
-        color: BNB_ROOM_COLORS.text,
-        fontStyle: 'bold',
-      })
-      .setDepth(DEPTH.UI)
-
-    this.add
       .text(lx, panel.y + 196, '地圖', {
         fontFamily: FONT,
         fontSize: '13px',
@@ -409,27 +398,6 @@ export class LobbyScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true })
         .setDepth(DEPTH.UI)
       hit.on('pointerdown', () => this.onCharacterPick(charIndex))
-    })
-  }
-
-  private buildColorPicker(): void {
-    const c = BNB_ROOM_LAYOUT.colors
-    TEAM_COLORS.forEach((color, i) => {
-      const { x, y } = colorSwatchCenter(i)
-      const swatch = this.add.rectangle(x, y, c.size, c.size, color).setDepth(DEPTH.SLOTS)
-      swatch.setStrokeStyle(2, BNB_ROOM_COLORS.white, 0.65)
-
-      const highlight = this.add
-        .rectangle(x, y, c.size + 6, c.size + 6)
-        .setStrokeStyle(3, BNB_ROOM_COLORS.white, 0)
-        .setDepth(DEPTH.HIGHLIGHT)
-      this.colorHighlights.push(highlight)
-
-      const hit = this.add
-        .rectangle(x, y, c.size + 4, c.size + 4, 0xffffff, 0.001)
-        .setInteractive({ useHandCursor: true })
-        .setDepth(DEPTH.UI)
-      hit.on('pointerdown', () => this.onColorPick(i))
     })
   }
 
@@ -577,13 +545,6 @@ export class LobbyScene extends Phaser.Scene {
     local.name = '你'
     this.refreshAll()
     this.showToast(`已選 ${char.label}`)
-  }
-
-  private onColorPick(index: number): void {
-    this.teamColorIndex = index
-    this.refreshColorHighlights()
-    this.syncDebugState()
-    this.showToast('隊伍顏色已更新')
   }
 
   private onPlayerSlotClick(index: number): void {

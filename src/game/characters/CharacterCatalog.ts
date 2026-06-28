@@ -1,7 +1,7 @@
 import { AssetKeys } from '../assets/AssetKeys'
 
-/** 爆爆王 OG 角色 */
-export type CharacterId = 'dao' | 'bazzi' | 'maro' | 'nana' | 'dizni'
+/** 爆爆王 OG 角色（maro 因美術與 bazzi 重複（兩個紅色睏寶）已移除） */
+export type CharacterId = 'dao' | 'bazzi' | 'nana' | 'dizni'
 
 export interface CharacterDef {
   id: CharacterId
@@ -25,13 +25,6 @@ export const CHARACTER_LIST: CharacterDef[] = [
     texture: AssetKeys.PLAYER_RED,
     portrait: 'portrait_bazzi',
     animPrefix: 'bazzi',
-  },
-  {
-    id: 'maro',
-    label: '紅寶',
-    texture: AssetKeys.PLAYER_YELLOW,
-    portrait: 'portrait_maro',
-    animPrefix: 'maro',
   },
   {
     id: 'nana',

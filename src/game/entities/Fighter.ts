@@ -12,6 +12,7 @@ import {
   MAX_BUBBLE_POWER,
   MAX_BUBBLES_CAP,
   MAX_MOVE_SPEED,
+  PLAYER_COLLISION_SIZE,
   PLAYER_DISPLAY_SIZE,
   PLAYER_MAX_HP,
   PLAYER_MOVE_SPEED,
@@ -66,21 +67,23 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this)
     scene.physics.add.existing(this)
 
-    // 顯示尺寸縮到接近格子大小，人物不再比箱子大一截
+    // 顯示尺寸放大到跟格子差不多大（含透明邊框故略大於 TILE）
     this.setDisplaySize(PLAYER_DISPLAY_SIZE, PLAYER_DISPLAY_SIZE)
 
     this.setCollideWorldBounds(true)
     this.setBounce(0)
     this.setDrag(200)
     this.setMaxVelocity(this.moveSpeed)
-    this.setSize(
-      this.spriteManifest.playerBodySize,
-      this.spriteManifest.playerBodySize,
-    )
-    this.setOffset(
-      this.spriteManifest.playerOffsetX,
-      this.spriteManifest.playerOffsetY,
-    )
+
+    // 碰撞體與顯示尺寸「脫鉤」：固定維持 PLAYER_COLLISION_SIZE 的世界大小，
+    // 顯示放大也不會讓碰撞變大、卡在窄路。body 是 source px，會被 scale 放大，
+    // 故先除回 scale 換算。
+    const frameW = this.spriteManifest.characterFrameWidth
+    const frameH = this.spriteManifest.characterFrameHeight
+    const bodyW = PLAYER_COLLISION_SIZE / this.scaleX
+    const bodyH = PLAYER_COLLISION_SIZE / this.scaleY
+    this.setSize(bodyW, bodyH)
+    this.setOffset((frameW - bodyW) / 2, (frameH - bodyH) / 2 + 4)
     this.setDepth(10)
     this.setFlipX(false)
     this.anims.stop()

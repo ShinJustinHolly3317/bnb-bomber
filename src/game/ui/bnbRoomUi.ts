@@ -49,12 +49,13 @@ export const TEAM_COLORS = [
   0x00bcd4, 0x2196f3, 0x9c27b0, 0xe91e63,
 ] as const
 
+// 4 個可選角色（dao/bazzi/nana/dizni）+ 2 個空格（? 佔位）
 export const CHAR_GRID = [
   { grid: 0, charIndex: 0 },
   { grid: 1, charIndex: 1 },
   { grid: 2, charIndex: 2 },
   { grid: 3, charIndex: 3 },
-  { grid: 4, charIndex: 4 },
+  { grid: 4, charIndex: -1 },
   { grid: 5, charIndex: -1 },
 ] as const
 
