@@ -1,7 +1,7 @@
-/** 爆爆王 BnB 標準地圖格：15×13，每格 40px */
+/** 爆爆王 BnB 地圖格：17×15（6 人加大版），每格 40px */
 export const TILE_SIZE = 40
-export const MAP_COLS = 15
-export const MAP_ROWS = 13
+export const MAP_COLS = 17
+export const MAP_ROWS = 15
 
 export const VIEW_WIDTH = 960
 export const VIEW_HEIGHT = 540
@@ -29,7 +29,9 @@ export const SPEED_BOOST = 45
 export const MAX_MOVE_SPEED = 220
 
 export const CAMERA_LERP = 0.1
-export const GAMEPLAY_ZOOM = 1
-export const OVERVIEW_ZOOM = 0.82
+// 17×15 地圖 = 680×600 世界像素，視窗 960×540。
+// zoom 0.85 讓整張地圖含上下留白單螢幕全覽（600×0.85=510 < 540）。
+export const GAMEPLAY_ZOOM = 0.85
+export const OVERVIEW_ZOOM = 0.7
 
 export const CRATE_ITEM_DROP_CHANCE = 0.7

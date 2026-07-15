@@ -87,8 +87,9 @@ export class DuelScene extends Phaser.Scene {
     this.buildTilemap()
     this.spawnItems()
 
-    const p1Pos = tileToWorld(mapData.spawnP1.col, mapData.spawnP1.row)
-    const p2Pos = tileToWorld(mapData.spawnP2.col, mapData.spawnP2.row)
+    // 離線練習維持 2 人 hotseat：用前兩個出生點
+    const p1Pos = tileToWorld(mapData.spawns[0]!.col, mapData.spawns[0]!.row)
+    const p2Pos = tileToWorld(mapData.spawns[1]!.col, mapData.spawns[1]!.row)
 
     const wasd = this.input.keyboard!.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.W,

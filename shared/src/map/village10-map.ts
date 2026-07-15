@@ -17,11 +17,16 @@ export const TileKind = {
 
 export type TileKindValue = (typeof TileKind)[keyof typeof TileKind]
 
+export interface SpawnPoint {
+  col: number
+  row: number
+}
+
 export interface Village10MapData {
   layoutVersion: typeof VILLAGE10_LAYOUT_VERSION
   tiles: TileKindValue[][]
-  spawnP1: { col: number; row: number }
-  spawnP2: { col: number; row: number }
+  /** 6 人出生點（index = slot）：四角 + 上下道路 */
+  spawns: SpawnPoint[]
 }
 
 const CHAR_TO_TILE: Record<string, TileKindValue> = {
@@ -89,14 +94,12 @@ export function buildVillage10Map(): Village10MapData {
       `村10 layout ${VILLAGE10_LAYOUT_VERSION} 尺寸不符（預期 ${MAP_COLS}×${MAP_ROWS}）`,
     )
   }
-  const spawnP1 = { ...VILLAGE10_LAYOUT_V1_SPAWN.spawnP1 }
-  const spawnP2 = { ...VILLAGE10_LAYOUT_V1_SPAWN.spawnP2 }
-  densifyCrates(tiles, [spawnP1, spawnP2])
+  const spawns = VILLAGE10_LAYOUT_V1_SPAWN.spawns.map((s) => ({ ...s }))
+  densifyCrates(tiles, spawns)
   return {
     layoutVersion: VILLAGE10_LAYOUT_VERSION,
     tiles,
-    spawnP1,
-    spawnP2,
+    spawns,
   }
 }
 

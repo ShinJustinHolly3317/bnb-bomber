@@ -12,6 +12,7 @@
 import {
   CHARACTER_IDS,
   CRATE_ITEM_DROP_CHANCE,
+  LOBBY_MAX_PLAYERS,
   MAP_COLS,
   MAP_ROWS,
   TileKind,
@@ -54,10 +55,13 @@ const cross = [
   [0, 1],
   [0, -1],
 ]
-for (const [name, s] of [
-  ['P1', map.spawnP1],
-  ['P2', map.spawnP2],
-]) {
+// 6 人：出生點必須有 6 個，且每個十字口袋都可走
+check(
+  Array.isArray(map.spawns) && map.spawns.length === 6,
+  `出生點數量 = ${map.spawns?.length}（6 人 OK）`,
+  `🔴 出生點應為 6 個，實際 ${map.spawns?.length}`,
+)
+map.spawns.forEach((s, idx) => {
   let walkable = 0
   for (const [dc, dr] of cross) {
     const c = s.col + dc
@@ -68,10 +72,17 @@ for (const [name, s] of [
   // 出生格 + 至少一個鄰格可走，才不會一開局就被箱子悶死
   check(
     isWalkable(map.tiles[s.row][s.col]) && walkable >= 2,
-    `${name} 出生點口袋可走（${walkable}/5）`,
-    `🔴 ${name} 出生點被悶住（可走格 ${walkable}/5）`,
+    `出生點#${idx} (${s.col},${s.row}) 口袋可走（${walkable}/5）`,
+    `🔴 出生點#${idx} (${s.col},${s.row}) 被悶住（可走格 ${walkable}/5）`,
   )
-}
+})
+
+// 5. 人數上限 = 6
+check(
+  LOBBY_MAX_PLAYERS === 6,
+  `房間人數上限 = ${LOBBY_MAX_PLAYERS}（6 人 OK）`,
+  `🔴 房間人數上限應為 6，實際 ${LOBBY_MAX_PLAYERS}`,
+)
 
 // 4. 角色去重 / 移除 maro
 const expected = ['dao', 'bazzi', 'nana', 'dizni']

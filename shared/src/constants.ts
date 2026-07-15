@@ -1,7 +1,7 @@
-/** 爆爆王 BnB 標準地圖格：15×13，每格 40px */
+/** 爆爆王 BnB 地圖格：17×15（6 人加大版），每格 40px */
 export const TILE_SIZE = 40
-export const MAP_COLS = 15
-export const MAP_ROWS = 13
+export const MAP_COLS = 17
+export const MAP_ROWS = 15
 
 export const PLAYER_MOVE_SPEED = 130
 export const PLAYER_BODY_HALF = 11
@@ -23,5 +23,5 @@ export const MAX_MOVE_SPEED = 220
 
 export const CRATE_ITEM_DROP_CHANCE = 0.7
 
-export const LOBBY_MAX_PLAYERS = 2
+export const LOBBY_MAX_PLAYERS = 6
 export const RECONNECT_MS = 30_000

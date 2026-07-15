@@ -95,7 +95,7 @@ export class Village10Sim {
     const map = buildVillage10Map()
     this.tiles = map.tiles.map((row) => [...row])
 
-    const spawns = [map.spawnP1, map.spawnP2]
+    const spawns = map.spawns
     this.players = players.map((p, i) => {
       const spawn = spawns[p.slot] ?? spawns[i]!
       const pos = tileToWorld(spawn.col, spawn.row)
@@ -125,6 +125,19 @@ export class Village10Sim {
         kind: spawn.kind,
       })
     })
+  }
+
+  /**
+   * 淘汰某位玩家（斷線 forfeit 用）：FFA 只讓此人陣亡，其餘繼續；
+   * 下一 tick 的 checkWinner 會在只剩 1 人時自動收尾。
+   */
+  killPlayer(playerId: string): void {
+    const p = this.players.find((pl) => pl.playerId === playerId)
+    if (p && !p.dead) {
+      p.dead = true
+      p.trapped = false
+    }
+    if (!this.finished) this.checkWinner()
   }
 
   step(inputs: Record<string, PlayerInput>): MatchSnapshot {

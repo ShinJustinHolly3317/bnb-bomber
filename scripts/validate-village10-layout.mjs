@@ -21,21 +21,25 @@ const CHAR_KEYS = {
 }
 
 const EXPECTED = {
-  grass: 58,
-  road: 37,
-  wall: 8,
-  tree: 14,
-  crate: 61,
-  redRoof: 13,
+  grass: 170,
+  road: 71,
+  wall: 0,
+  tree: 6,
+  crate: 0,
+  redRoof: 4,
   blueRoof: 4,
-  totalCells: 195,
+  totalCells: 255,
 }
+
+const EXPECTED_ROWS = 15
+const EXPECTED_COLS = 17
 
 function extractLayoutLines(source) {
   const block = source.match(/VILLAGE10_LAYOUT_V1 = \[([\s\S]*?)\] as const/)
   if (!block) throw new Error('找不到 VILLAGE10_LAYOUT_V1')
   const lines = [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
-  if (lines.length !== 13) throw new Error(`layout 行數應為 13，目前 ${lines.length}`)
+  if (lines.length !== EXPECTED_ROWS)
+    throw new Error(`layout 行數應為 ${EXPECTED_ROWS}，目前 ${lines.length}`)
   return lines
 }
 
@@ -43,8 +47,8 @@ function countLayout(lines) {
   const counts = Object.fromEntries(Object.values(CHAR_KEYS).map((k) => [k, 0]))
   let total = 0
   for (const line of lines) {
-    if (line.length !== 15) {
-      throw new Error(`每行應 15 欄，有一行是 ${line.length}：${line}`)
+    if (line.length !== EXPECTED_COLS) {
+      throw new Error(`每行應 ${EXPECTED_COLS} 欄，有一行是 ${line.length}：${line}`)
     }
     for (const ch of line) {
       const key = CHAR_KEYS[ch]

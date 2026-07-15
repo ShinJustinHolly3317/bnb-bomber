@@ -9,6 +9,7 @@ import type {
   ServerMessage,
 } from '@bnb/shared'
 import {
+  CHARACTER_IDS,
   LOBBY_MAX_PLAYERS,
   RECONNECT_MS,
   TICK_MS,
@@ -139,16 +140,9 @@ export class GameRoom {
     player.ready = false
 
     if (this.phase === 'match') {
-      this.stopMatch()
-      this.phase = 'ended'
-      const other = [...this.players.values()].find((p) => p.playerId !== playerId && p.ws)
-      if (other) {
-        this.broadcast({
-          type: 'matchEnd',
-          winnerId: other.playerId,
-          winnerLabel: `${other.name}（對手離線）`,
-        })
-      }
+      // FFA：斷線者在 sim 中淘汰，其餘玩家繼續對戰；
+      // 只剩 1 人時由 tickMatch 的 snapshot.finished 自然收尾。
+      this.sim?.killPlayer(playerId)
     }
 
     setTimeout(() => {
@@ -197,7 +191,8 @@ export class GameRoom {
       playerId,
       name: name.slice(0, 12) || `玩家${slot + 1}`,
       slot,
-      characterId: slot === 0 ? 'dao' : 'bazzi',
+      // 6 人：預設角色依 slot 輪替（允許之後重複選角）
+      characterId: CHARACTER_IDS[slot % CHARACTER_IDS.length]!,
       ready: false,
       ws,
       disconnectedAt: null,
@@ -290,15 +285,13 @@ export class GameRoom {
   }
 
   private removePlayer(playerId: string): void {
+    // 對戰中主動離開：先在 sim 淘汰（FFA），再從房間移除
+    if (this.phase === 'match') this.sim?.killPlayer(playerId)
     this.players.delete(playerId)
     if (this.players.size === 0) {
       this.stopMatch()
       this.onEmpty()
       return
-    }
-    if (this.phase === 'match') {
-      this.stopMatch()
-      this.phase = 'ended'
     }
     this.broadcastLobby()
   }

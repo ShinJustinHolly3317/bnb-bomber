@@ -67,6 +67,16 @@ export class LobbyScene extends Phaser.Scene {
 
   create(): void {
     this.starting = false
+    // Phaser 會重用同一個 scene instance，重進房時 create() 會再跑一次。
+    // 這些陣列若不歸零，build* 會把新物件 push 在「上一輪已被銷毀的物件」後面，
+    // refreshPlayerSlots 讀到 index 0/1 的舊死物件 → setTexture 時 this.scene
+    // 為 undefined → 「Cannot read properties of undefined (reading 'sys')」黑畫面。
+    this.slotPortraits = []
+    this.slotNameTexts = []
+    this.slotBadgeTexts = []
+    this.charHighlights = []
+    this.colorHighlights = []
+    this.roomCodeText = undefined
     this.cameras.main.fadeIn(200, 0, 0, 0)
     this.online = this.registry.get('playMode') === 'online'
 
@@ -624,6 +634,9 @@ export class LobbyScene extends Phaser.Scene {
       const portrait = this.slotPortraits[i]
       const nameText = this.slotNameTexts[i]
       const badge = this.slotBadgeTexts[i]
+      // 防呆：只要有任何一個 slot 物件缺失或已被銷毀（.scene 為空）就跳過，
+      // 避免對死物件呼叫 setTexture 造成 'Cannot read properties of undefined (sys)' 黑畫面
+      if (!portrait || !nameText || !badge || !portrait.scene) return
       if (!slot.occupied) {
         portrait.setVisible(false)
         nameText.setText('')
@@ -631,6 +644,13 @@ export class LobbyScene extends Phaser.Scene {
         return
       }
       const char = CHARACTER_BY_ID[slot.characterId]
+      if (!char) {
+        // 未知角色（例如舊資料殘留）：只顯示空位，不要讓整個場景崩掉
+        portrait.setVisible(false)
+        nameText.setText('')
+        badge.setVisible(false)
+        return
+      }
       portrait.setTexture(char.portrait).setVisible(true)
       nameText.setText(slot.name || char.label)
       if (i === 0) {
@@ -648,13 +668,16 @@ export class LobbyScene extends Phaser.Scene {
 
   private refreshCharHighlights(): void {
     CHAR_GRID.forEach(({ charIndex }, i) => {
+      const hl = this.charHighlights[i]
+      if (!hl || !hl.scene) return
       const selected = charIndex >= 0 && charIndex === this.selectedCharIndex
-      this.charHighlights[i].setStrokeStyle(3, BNB_ROOM_COLORS.selectPink, selected ? 1 : 0)
+      hl.setStrokeStyle(3, BNB_ROOM_COLORS.selectPink, selected ? 1 : 0)
     })
   }
 
   private refreshColorHighlights(): void {
     this.colorHighlights.forEach((hl, i) => {
+      if (!hl || !hl.scene) return
       hl.setStrokeStyle(3, BNB_ROOM_COLORS.white, i === this.teamColorIndex ? 1 : 0)
     })
   }

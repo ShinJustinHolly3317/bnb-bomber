@@ -20,6 +20,10 @@ import { setBnbState } from '../debug/bnbState'
 import type { GameClient } from '../net/GameClient'
 import { tileToWorld } from '../utils/grid'
 
+// 各 slot 的識別底色（允許重複選角時用來區分玩家）
+const SLOT_COLORS = [0xe53935, 0x1e88e5, 0xfdd835, 0x8e24aa, 0x43a047, 0xfb8c00]
+const cssColor = (c: number) => `#${c.toString(16).padStart(6, '0')}`
+
 const TILE_TEXTURE: Record<TileKindValue, string> = {
   [TileKind.GRASS]: AssetKeys.TILE_GRASS,
   [TileKind.ROAD]: AssetKeys.TILE_ROAD,
@@ -42,6 +46,9 @@ export class OnlineDuelController {
   private framesPerDir = DEFAULT_SPRITE_MANIFEST.walkFramesPerDirection
   private bubbleSprites = new Map<number, Phaser.GameObjects.Sprite>()
   private itemSprites = new Map<number, ItemPickup>()
+  // 頭上名牌 + 腳下底色圈（區分重複選角的玩家）
+  private namePlates = new Map<string, Phaser.GameObjects.Text>()
+  private baseRings = new Map<string, Phaser.GameObjects.Ellipse>()
   private hpTexts: Phaser.GameObjects.Text[] = []
   private explosionsSpawned = 0
   private gameEnded = false
@@ -201,6 +208,8 @@ export class OnlineDuelController {
       sprite.setAlpha(f.dead ? 0.35 : 1)
       sprite.setTint(f.trapped ? 0xaaddff : 0xffffff)
 
+      this.syncNameplate(f)
+
       // 依 snapshot 位移判斷是否在走動，播放對應方向的 walk 動畫；
       // 靜止時停下動畫並回到該方向的待機影格（修正「靜止平移」問題）
       const prev = this.fighterPrevPos.get(f.playerId)
@@ -231,8 +240,56 @@ export class OnlineDuelController {
         this.fighterSprites.get(id)?.destroy()
         this.fighterSprites.delete(id)
         this.fighterPrevPos.delete(id)
+        this.namePlates.get(id)?.destroy()
+        this.namePlates.delete(id)
+        this.baseRings.get(id)?.destroy()
+        this.baseRings.delete(id)
       }
     }
+  }
+
+  private syncNameplate(f: FighterSnapshot): void {
+    const color = SLOT_COLORS[f.slot % SLOT_COLORS.length]!
+    const ringY = f.y + PLAYER_DISPLAY_SIZE * 0.34
+    let ring = this.baseRings.get(f.playerId)
+    if (!ring) {
+      ring = this.scene.add
+        .ellipse(
+          f.x,
+          ringY,
+          PLAYER_DISPLAY_SIZE * 0.72,
+          PLAYER_DISPLAY_SIZE * 0.28,
+          color,
+          0.55,
+        )
+        .setDepth(9)
+      this.baseRings.set(f.playerId, ring)
+    } else {
+      ring.setPosition(f.x, ringY)
+    }
+    ring.setVisible(!f.dead)
+
+    const plateY = f.y - PLAYER_DISPLAY_SIZE * 0.52
+    const isLocal = f.playerId === this.localPlayerId
+    const label = `${isLocal ? '★' : ''}${f.name}`
+    let plate = this.namePlates.get(f.playerId)
+    if (!plate) {
+      plate = this.scene.add
+        .text(f.x, plateY, label, {
+          fontFamily: 'monospace',
+          fontSize: '12px',
+          color: '#ffffff',
+          backgroundColor: cssColor(color),
+          padding: { x: 4, y: 1 },
+        })
+        .setOrigin(0.5, 1)
+        .setDepth(30)
+      this.namePlates.set(f.playerId, plate)
+    } else {
+      plate.setPosition(f.x, plateY)
+      if (plate.text !== label) plate.setText(label)
+    }
+    plate.setAlpha(f.dead ? 0.4 : 1)
   }
 
   private updateFighterAnim(
