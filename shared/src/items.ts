@@ -12,12 +12,12 @@ export interface ItemSpawn {
   kind: ItemKindValue
 }
 
-/** 村10 固定道具位置（開局可拾取）— v2 加大地圖，放在馬路上（不會被木箱覆蓋） */
+/** 村10 固定道具位置（開局可拾取）— 15×13 原地圖，放在中央馬路上（不會被木箱覆蓋） */
 export const VILLAGE10_ITEM_SPAWNS: ItemSpawn[] = [
-  { col: 8, row: 4, kind: ItemKind.POWER },
-  { col: 8, row: 10, kind: ItemKind.BUBBLE },
-  { col: 2, row: 7, kind: ItemKind.SPEED },
-  { col: 14, row: 7, kind: ItemKind.SPEED },
-  { col: 4, row: 7, kind: ItemKind.POWER },
-  { col: 12, row: 7, kind: ItemKind.BUBBLE },
+  { col: 6, row: 0, kind: ItemKind.SPEED },
+  { col: 8, row: 0, kind: ItemKind.POWER },
+  { col: 5, row: 5, kind: ItemKind.BUBBLE },
+  { col: 8, row: 5, kind: ItemKind.SPEED },
+  { col: 6, row: 11, kind: ItemKind.POWER },
+  { col: 9, row: 11, kind: ItemKind.BUBBLE },
 ]

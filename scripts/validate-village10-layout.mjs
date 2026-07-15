@@ -21,18 +21,18 @@ const CHAR_KEYS = {
 }
 
 const EXPECTED = {
-  grass: 170,
-  road: 71,
-  wall: 0,
-  tree: 6,
-  crate: 0,
-  redRoof: 4,
+  grass: 58,
+  road: 37,
+  wall: 8,
+  tree: 14,
+  crate: 61,
+  redRoof: 13,
   blueRoof: 4,
-  totalCells: 255,
+  totalCells: 195,
 }
 
-const EXPECTED_ROWS = 15
-const EXPECTED_COLS = 17
+const EXPECTED_ROWS = 13
+const EXPECTED_COLS = 15
 
 function extractLayoutLines(source) {
   const block = source.match(/VILLAGE10_LAYOUT_V1 = \[([\s\S]*?)\] as const/)
