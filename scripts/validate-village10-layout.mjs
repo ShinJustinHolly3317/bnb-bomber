@@ -21,9 +21,9 @@ const CHAR_KEYS = {
 }
 
 const EXPECTED = {
-  grass: 58,
+  grass: 60,
   road: 37,
-  wall: 8,
+  wall: 6,
   tree: 14,
   crate: 61,
   redRoof: 13,
@@ -41,6 +41,67 @@ function extractLayoutLines(source) {
   if (lines.length !== EXPECTED_ROWS)
     throw new Error(`layout 行數應為 ${EXPECTED_ROWS}，目前 ${lines.length}`)
   return lines
+}
+
+function extractSpawns(source) {
+  const block = source.match(/VILLAGE10_LAYOUT_V1_SPAWN = \{([\s\S]*?)\} as const/)
+  if (!block) throw new Error('找不到 VILLAGE10_LAYOUT_V1_SPAWN')
+  const spawns = [...block[1].matchAll(/\{\s*col:\s*(\d+),\s*row:\s*(\d+)\s*\}/g)].map(
+    (m) => ({ col: Number(m[1]), row: Number(m[2]) }),
+  )
+  if (spawns.length === 0) throw new Error('找不到任何出生點')
+  return spawns
+}
+
+// 可通行 = 草地/馬路/木箱（木箱可炸開）；#、V、T、B 為永久牆
+const PASSABLE = new Set(['.', 'R', 'Y'])
+
+function floodFill(lines, startCol, startRow) {
+  const cols = lines[0].length
+  const rows = lines.length
+  const seen = new Set([startRow * cols + startCol])
+  const stack = [[startCol, startRow]]
+  while (stack.length) {
+    const [c, r] = stack.pop()
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nc = c + dc
+      const nr = r + dr
+      if (nc < 0 || nc >= cols || nr < 0 || nr >= rows) continue
+      const id = nr * cols + nc
+      if (seen.has(id)) continue
+      if (!PASSABLE.has(lines[nr][nc])) continue
+      seen.add(id)
+      stack.push([nc, nr])
+    }
+  }
+  return seen
+}
+
+/**
+ * 出生點連通性驗證：每個出生點必須可通行，且都落在同一個連通區，
+ * 否則玩家會像左上角 (0,0) 那樣被永久牆困死、走不出來。
+ */
+function validateSpawnConnectivity(lines, spawns) {
+  const cols = lines[0].length
+  const errors = []
+
+  for (const { col, row } of spawns) {
+    const ch = lines[row]?.[col]
+    if (!PASSABLE.has(ch)) {
+      errors.push(`出生點 (${col},${row}) 落在永久牆 '${ch}'（無法站立）`)
+    }
+  }
+
+  const base = spawns[0]
+  const component = floodFill(lines, base.col, base.row)
+  for (const { col, row } of spawns) {
+    if (!component.has(row * cols + col)) {
+      errors.push(
+        `出生點 (${col},${row}) 與 slot0 (${base.col},${base.row}) 不連通（被永久牆封死）`,
+      )
+    }
+  }
+  return errors
 }
 
 function countLayout(lines) {
@@ -64,6 +125,7 @@ function countLayout(lines) {
 function main() {
   const source = readFileSync(LAYOUT_FILE, 'utf8')
   const lines = extractLayoutLines(source)
+  const spawns = extractSpawns(source)
   const counts = countLayout(lines)
 
   const errors = []
@@ -73,8 +135,10 @@ function main() {
     }
   }
 
+  errors.push(...validateSpawnConnectivity(lines, spawns))
+
   if (errors.length) {
-    console.error('🔴 村10 layout v1 驗證失敗（地圖跑版）:')
+    console.error('🔴 村10 layout v1 驗證失敗（地圖跑版 / 出生點被困）:')
     errors.forEach((e) => console.error('  -', e))
     console.error('\n若有意變更 layout，請 bump 版本並更新 GAME_DESIGN.md + VILLAGE10_LAYOUT_V1_COUNTS')
     process.exit(1)
@@ -82,6 +146,7 @@ function main() {
 
   console.log('✅ 村10 layout v1 驗證通過')
   console.log('   counts:', counts)
+  console.log(`   spawns: ${spawns.length} 個，皆連通可走`)
 }
 
 main()

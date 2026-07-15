@@ -15,6 +15,10 @@ export const MAX_BUBBLE_POWER = 5
 export const BUBBLE_DAMAGE = 50
 export const PLAYER_MAX_HP = 100
 
+// 被水球炸到 → 被淡藍泡泡困住，撐過這段時間沒被救就自爆死亡（經典爆爆王機制）
+export const BUBBLE_TRAP_MS = 10_000
+export const BUBBLE_TRAP_TICKS = BUBBLE_TRAP_MS / TICK_MS
+
 export const BASE_MAX_BUBBLES = 1
 export const MAX_BUBBLES_CAP = 4
 

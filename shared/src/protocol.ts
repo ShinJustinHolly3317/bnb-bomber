@@ -77,6 +77,8 @@ export interface FighterSnapshot {
   facing: Facing
   hp: number
   trapped: boolean
+  // 困在泡泡中剩餘的 tick 數（0 = 沒被困）；歸零自爆
+  trapTicksLeft: number
   dead: boolean
   moveSpeed: number
   bubblePower: number

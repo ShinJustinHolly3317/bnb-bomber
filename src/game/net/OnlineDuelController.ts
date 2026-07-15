@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 
 import type { ExplosionEvent, FighterSnapshot, MatchSnapshot } from '@bnb/shared'
-import { MAP_COLS, MAP_ROWS, TILE_SIZE } from '@bnb/shared'
+import { MAP_COLS, MAP_ROWS, TICK_MS, TILE_SIZE } from '@bnb/shared'
 import type { Dir } from '@bnb/shared'
 import {
   TileKind,
@@ -49,6 +49,8 @@ export class OnlineDuelController {
   // 頭上名牌 + 腳下底色圈（區分重複選角的玩家）
   private namePlates = new Map<string, Phaser.GameObjects.Text>()
   private baseRings = new Map<string, Phaser.GameObjects.Ellipse>()
+  // 被困住時罩在角色外的淡藍泡泡
+  private trapBubbles = new Map<string, Phaser.GameObjects.Sprite>()
   private hpTexts: Phaser.GameObjects.Text[] = []
   private explosionsSpawned = 0
   private gameEnded = false
@@ -57,7 +59,11 @@ export class OnlineDuelController {
   private unsub: (() => void) | null = null
 
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys
+  // 方向鍵：與 WASD 並存，任一組都能操作
+  private arrowKeys!: Phaser.Types.Input.Keyboard.CursorKeys
   private bubbleKey!: Phaser.Input.Keyboard.Key
+  // Enter：方向鍵玩家的放球鍵（與 Space 並存）
+  private bubbleKey2!: Phaser.Input.Keyboard.Key
 
   constructor(scene: Phaser.Scene, client: GameClient, localPlayerId: string) {
     this.scene = scene
@@ -79,8 +85,12 @@ export class OnlineDuelController {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
     }) as Phaser.Types.Input.Keyboard.CursorKeys
+    this.arrowKeys = this.scene.input.keyboard!.createCursorKeys()
     this.bubbleKey = this.scene.input.keyboard!.addKey(
       Phaser.Input.Keyboard.KeyCodes.SPACE,
+    )
+    this.bubbleKey2 = this.scene.input.keyboard!.addKey(
+      Phaser.Input.Keyboard.KeyCodes.ENTER,
     )
 
     const w = MAP_COLS * TILE_SIZE
@@ -95,7 +105,7 @@ export class OnlineDuelController {
     this.scene.cameras.main.centerOn(w / 2, h / 2)
 
     this.scene.add
-      .text(12, VIEW_HEIGHT - 40, '線上對戰 | WASD 移動 | Space 放球', {
+      .text(12, VIEW_HEIGHT - 40, '線上對戰 | WASD/方向鍵 移動 | Space/Enter 放球', {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: '#fffde7',
@@ -132,13 +142,15 @@ export class OnlineDuelController {
   }
 
   private sendLocalInput(): void {
+    const k = this.keys
+    const a = this.arrowKeys
     let dir: Dir | null = null
-    if (this.keys.left?.isDown) dir = 'left'
-    else if (this.keys.right?.isDown) dir = 'right'
-    else if (this.keys.up?.isDown) dir = 'up'
-    else if (this.keys.down?.isDown) dir = 'down'
+    if (k.left?.isDown || a.left?.isDown) dir = 'left'
+    else if (k.right?.isDown || a.right?.isDown) dir = 'right'
+    else if (k.up?.isDown || a.up?.isDown) dir = 'up'
+    else if (k.down?.isDown || a.down?.isDown) dir = 'down'
 
-    const bubbleDown = this.bubbleKey.isDown
+    const bubbleDown = this.bubbleKey.isDown || this.bubbleKey2.isDown
     const placeBubble = bubbleDown && !this.bubbleKeyWasDown
     this.bubbleKeyWasDown = bubbleDown
 
@@ -209,6 +221,7 @@ export class OnlineDuelController {
       sprite.setTint(f.trapped ? 0xaaddff : 0xffffff)
 
       this.syncNameplate(f)
+      this.syncTrapBubble(f)
 
       // 依 snapshot 位移判斷是否在走動，播放對應方向的 walk 動畫；
       // 靜止時停下動畫並回到該方向的待機影格（修正「靜止平移」問題）
@@ -244,7 +257,43 @@ export class OnlineDuelController {
         this.namePlates.delete(id)
         this.baseRings.get(id)?.destroy()
         this.baseRings.delete(id)
+        this.trapBubbles.get(id)?.destroy()
+        this.trapBubbles.delete(id)
       }
+    }
+  }
+
+  /** 被困住時在角色外圍畫一顆會脈動的淡藍泡泡；解除/出局就移除 */
+  private syncTrapBubble(f: FighterSnapshot): void {
+    const existing = this.trapBubbles.get(f.playerId)
+    if (!f.trapped || f.dead) {
+      if (existing) {
+        existing.destroy()
+        this.trapBubbles.delete(f.playerId)
+      }
+      return
+    }
+    let bubble = existing
+    if (!bubble) {
+      bubble = this.scene.add.sprite(f.x, f.y, AssetKeys.BUBBLE).setDepth(20)
+      const size = PLAYER_DISPLAY_SIZE * 1.15
+      bubble.setDisplaySize(size, size)
+      bubble.setTint(0x9fdcff)
+      bubble.setAlpha(0.7)
+      const sx = bubble.scaleX
+      const sy = bubble.scaleY
+      this.scene.tweens.add({
+        targets: bubble,
+        scaleX: sx * 1.08,
+        scaleY: sy * 0.92,
+        duration: 480,
+        ease: 'Sine.InOut',
+        yoyo: true,
+        repeat: -1,
+      })
+      this.trapBubbles.set(f.playerId, bubble)
+    } else {
+      bubble.setPosition(f.x, f.y)
     }
   }
 
@@ -386,9 +435,14 @@ export class OnlineDuelController {
   private updateHpUi(fighters: FighterSnapshot[]): void {
     fighters.forEach((f, i) => {
       const tag = f.playerId === this.localPlayerId ? ' [你]' : ''
-      const trapped = f.trapped ? ' [困]' : f.dead ? ' [出局]' : ''
+      const secs = Math.ceil((f.trapTicksLeft * TICK_MS) / 1000)
+      const status = f.dead
+        ? ' [出局]'
+        : f.trapped
+          ? ` [困 ${secs}s]`
+          : ' [存活]'
       this.hpTexts[i]?.setText(
-        `${f.name}${tag}  HP ${f.hp}${trapped}\n速${f.moveSpeed} 威${f.bubblePower} 球${f.maxBubbles}`,
+        `${f.name}${tag}${status}\n速${f.moveSpeed} 威${f.bubblePower} 球${f.maxBubbles}`,
       )
     })
   }

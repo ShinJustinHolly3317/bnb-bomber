@@ -11,8 +11,9 @@ export const VILLAGE10_LAYOUT_VERSION = 'v1' as const
 
 /** 13 行 × 15 欄；對照 reference-village10.png 調整過門口的穩定版 */
 export const VILLAGE10_LAYOUT_V1 = [
-  'YYT#Y.RRRVY.Y..',
-  '.Y.#Y.RRR....YY',
+  // 左上角原本被 col3 的永久牆 (#) 完全封死，角色炸不出來 → 打通 (3,0)(3,1) 兩格當門口
+  'YYT.Y.RRRVY.Y..',
+  '.Y..Y.RRR....YY',
   '.##TY.BRRV..BYR',
   'Y#Y#YYYRRVYYTYT',
   'T#T#.YRRRVYYYYY',
@@ -28,9 +29,9 @@ export const VILLAGE10_LAYOUT_V1 = [
 
 /** v1 各元素數量 — `npm run validate:map` 會強制比對 */
 export const VILLAGE10_LAYOUT_V1_COUNTS = {
-  grass: 58,
+  grass: 60,
   road: 37,
-  wall: 8,
+  wall: 6,
   tree: 14,
   crate: 61,
   redRoof: 13,
@@ -40,11 +41,14 @@ export const VILLAGE10_LAYOUT_V1_COUNTS = {
 
 /**
  * 出生點（6 人）：四角 + 上下道路中央。
- * 位置皆挑選為「十字口袋不碰牆/樹/屋」的乾淨點，densifyCrates 會把口袋清成可走草地。
+ * ⚠️ 每個點都必須落在主連通區（可經草地/木箱/馬路互通）。
+ *    左上真角 (0,0) 被 #/T 永久牆完全封死（走不出去），故改用 (4,0)：
+ *    緊鄰上方道路脊 (6,0)，往右一步即可上路，是最接近左上角的可玩點。
+ *    densifyCrates 會把口袋清成可走草地；`npm run validate:map` 會強制檢查連通。
  */
 export const VILLAGE10_LAYOUT_V1_SPAWN = {
   spawns: [
-    { col: 0, row: 0 }, // slot0 左上角
+    { col: 4, row: 0 }, // slot0 左上（避開左上封閉牆區，緊鄰上方道路）
     { col: 14, row: 12 }, // slot1 右下角（與 slot0 對角，離線 2 人才會分開）
     { col: 14, row: 0 }, // slot2 右上角
     { col: 0, row: 10 }, // slot3 左下角

@@ -22,6 +22,9 @@ export const MAX_BUBBLE_POWER = 5
 export const BUBBLE_DAMAGE = 50
 export const PLAYER_MAX_HP = 100
 
+// 被水球炸到 → 困進淡藍泡泡，撐 10s 沒被救就自爆（與 server 端一致）
+export const BUBBLE_TRAP_MS = 10_000
+
 export const BASE_MAX_BUBBLES = 1
 export const MAX_BUBBLES_CAP = 4
 

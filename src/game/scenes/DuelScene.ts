@@ -11,7 +11,6 @@ import {
 import { AssetKeys } from '../assets/AssetKeys'
 import { CHARACTER_BY_ID } from '../characters/CharacterCatalog'
 import {
-  BUBBLE_DAMAGE,
   CRATE_ITEM_DROP_CHANCE,
   GAMEPLAY_ZOOM,
   MAP_COLS,
@@ -241,6 +240,7 @@ export class DuelScene extends Phaser.Scene {
     if (this.gameEnded) return
 
     this.fighters.forEach((f) => f.update())
+    this.resolveTrappedTouches()
     this.updateHpUi()
     this.updateCamera()
     this.publishState()
@@ -302,12 +302,31 @@ export class DuelScene extends Phaser.Scene {
     this.itemGroup.add(item)
   }
 
+  /** 被困住的玩家若被非同陣營的敵人觸碰 → 立即爆破（未來隊友觸碰＝解救） */
+  private resolveTrappedTouches(): void {
+    const touchDist = TILE_SIZE * 0.9
+    this.fighters.forEach((victim) => {
+      if (victim.dead || !victim.trapped) return
+      const touched = this.fighters.some(
+        (other) =>
+          other !== victim &&
+          !other.dead &&
+          !other.trapped &&
+          Phaser.Math.Distance.Between(other.x, other.y, victim.x, victim.y) <
+            touchDist,
+      )
+      if (touched) victim.burst()
+    })
+  }
+
   private updateHpUi(): void {
     this.fighters.forEach((f, i) => {
-      const tag = f.trapped ? ' [困]' : f.dead ? ' [出局]' : ''
-      this.hpTexts[i].setText(
-        `${f.label}  HP ${f.hp}${tag}\n${f.statsLine()}`,
-      )
+      const status = f.dead
+        ? ' [出局]'
+        : f.trapped
+          ? ` [困 ${f.trapSecondsLeft()}s]`
+          : ' [存活]'
+      this.hpTexts[i].setText(`${f.label}${status}\n${f.statsLine()}`)
     })
   }
 
@@ -337,25 +356,10 @@ export class DuelScene extends Phaser.Scene {
       this.physics.add.collider(f, bubble)
     })
 
-    bubble.onPop = (b, trapped) => this.handleBubblePop(b, trapped)
-
-    const victim = this.fighters.find(
-      (f) =>
-        f !== fighter &&
-        !f.dead &&
-        worldToTile(f.x, f.y).col === col &&
-        worldToTile(f.x, f.y).row === row,
-    )
-    if (victim) {
-      victim.setTrapped(true)
-      bubble.pop(victim)
-    }
+    bubble.onPop = (b) => this.handleBubblePop(b)
   }
 
-  private handleBubblePop(
-    bubble: WaterBubble,
-    trapped: Fighter | null,
-  ): void {
+  private handleBubblePop(bubble: WaterBubble): void {
     bubble.owner.unregisterBubble(bubble)
 
     this.showExplosion(bubble.col, bubble.row, bubble.owner.bubblePower)
@@ -367,17 +371,13 @@ export class DuelScene extends Phaser.Scene {
     )
     this.applyExplosionToMap(hitTiles)
 
-    if (trapped) {
-      trapped.setTrapped(false)
-      trapped.takeDamage(BUBBLE_DAMAGE)
-    }
-
     this.fighters.forEach((f) => {
       if (f.dead) return
       const t = worldToTile(f.x, f.y)
-      if (hitTiles.some((h) => h.col === t.col && h.row === t.row)) {
-        f.takeDamage(BUBBLE_DAMAGE)
-      }
+      if (!hitTiles.some((h) => h.col === t.col && h.row === t.row)) return
+      // 已在泡泡中又被炸 → 直接爆破；否則困進泡泡
+      if (f.trapped) f.burst()
+      else f.trap()
     })
   }
 

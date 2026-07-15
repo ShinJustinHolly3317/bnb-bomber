@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 
-import { AnimKeys } from '../assets/AssetKeys'
+import { AnimKeys, AssetKeys } from '../assets/AssetKeys'
 import {
   DEFAULT_SPRITE_MANIFEST,
   idleFrameForFacing,
@@ -9,6 +9,7 @@ import {
 import {
   BASE_BUBBLE_POWER,
   BASE_MAX_BUBBLES,
+  BUBBLE_TRAP_MS,
   MAX_BUBBLE_POWER,
   MAX_BUBBLES_CAP,
   MAX_MOVE_SPEED,
@@ -30,6 +31,9 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   trapped = false
   dead = false
   facing: Facing = 'down'
+  // 泡泡困住的到期時間（scene.time.now 毫秒），0 = 沒被困
+  trapUntil = 0
+  private trapFx: Phaser.GameObjects.Sprite | null = null
 
   moveSpeed = PLAYER_MOVE_SPEED
   bubblePower = BASE_BUBBLE_POWER
@@ -118,8 +122,14 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   }
 
   update(): void {
-    if (this.dead || this.trapped) {
+    if (this.dead) {
       this.setVelocity(0, 0)
+      return
+    }
+    if (this.trapped) {
+      this.setVelocity(0, 0)
+      this.trapFx?.setPosition(this.x, this.y)
+      if (this.scene.time.now >= this.trapUntil) this.burst()
       return
     }
 
@@ -171,26 +181,52 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  takeDamage(amount: number): void {
-    if (this.dead) return
-    this.hp = Math.max(0, this.hp - amount)
-    this.setTint(0xff8888)
-    this.scene.time.delayedCall(120, () => this.clearTint())
-    if (this.hp <= 0) {
-      this.dead = true
-      this.trapped = false
-      this.setVelocity(0, 0)
-      this.setAlpha(0.35)
-    }
+  /** 被炸到：困進淡藍泡泡，開始 10s 倒數（已困或已死則不處理） */
+  trap(): void {
+    if (this.dead || this.trapped) return
+    this.trapped = true
+    this.trapUntil = this.scene.time.now + BUBBLE_TRAP_MS
+    this.setVelocity(0, 0)
+    this.setTint(0xaaddff)
+    this.spawnTrapFx()
   }
 
-  setTrapped(value: boolean): void {
-    this.trapped = value
-    if (value) {
-      this.setVelocity(0, 0)
-      this.setTint(0xaaddff)
-    } else {
-      this.clearTint()
-    }
+  /** 泡泡爆破：出局 */
+  burst(): void {
+    if (this.dead) return
+    this.dead = true
+    this.trapped = false
+    this.trapUntil = 0
+    this.setVelocity(0, 0)
+    this.setAlpha(0.35)
+    this.clearTint()
+    this.trapFx?.destroy()
+    this.trapFx = null
+  }
+
+  /** 剩餘困住秒數（給 UI 倒數顯示用） */
+  trapSecondsLeft(): number {
+    if (!this.trapped) return 0
+    return Math.max(0, Math.ceil((this.trapUntil - this.scene.time.now) / 1000))
+  }
+
+  private spawnTrapFx(): void {
+    const fx = this.scene.add.sprite(this.x, this.y, AssetKeys.BUBBLE)
+    fx.setDepth(20)
+    fx.setDisplaySize(this.displayWidth * 1.15, this.displayHeight * 1.15)
+    fx.setTint(0x9fdcff)
+    fx.setAlpha(0.7)
+    const sx = fx.scaleX
+    const sy = fx.scaleY
+    this.scene.tweens.add({
+      targets: fx,
+      scaleX: sx * 1.08,
+      scaleY: sy * 0.92,
+      duration: 480,
+      ease: 'Sine.InOut',
+      yoyo: true,
+      repeat: -1,
+    })
+    this.trapFx = fx
   }
 }

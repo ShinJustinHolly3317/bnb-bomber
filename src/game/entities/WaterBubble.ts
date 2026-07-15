@@ -11,9 +11,7 @@ export class WaterBubble extends Phaser.Physics.Arcade.Sprite {
 
   private popped = false
 
-  onPop:
-    | ((bubble: WaterBubble, trapped: Fighter | null) => void)
-    | null = null
+  onPop: ((bubble: WaterBubble) => void) | null = null
 
   constructor(
     scene: Phaser.Scene,
@@ -38,7 +36,7 @@ export class WaterBubble extends Phaser.Physics.Arcade.Sprite {
 
     this.playSpawnAndPulse()
 
-    scene.time.delayedCall(BUBBLE_FUSE_MS, () => this.pop(null))
+    scene.time.delayedCall(BUBBLE_FUSE_MS, () => this.pop())
   }
 
   /** 放下時彈出 + 持續輕微脈動，水球看起來會「呼吸」而非靜止貼圖 */
@@ -66,10 +64,10 @@ export class WaterBubble extends Phaser.Physics.Arcade.Sprite {
     })
   }
 
-  pop(trapped: Fighter | null): void {
+  pop(): void {
     if (this.popped) return
     this.popped = true
-    this.onPop?.(this, trapped)
+    this.onPop?.(this)
     this.destroy()
   }
 }

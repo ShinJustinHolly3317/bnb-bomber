@@ -1,8 +1,8 @@
 import {
   BASE_BUBBLE_POWER,
   BASE_MAX_BUBBLES,
-  BUBBLE_DAMAGE,
   BUBBLE_FUSE_TICKS,
+  BUBBLE_TRAP_TICKS,
   CRATE_ITEM_DROP_CHANCE,
   MAP_COLS,
   MAP_ROWS,
@@ -46,6 +46,8 @@ interface SimPlayer {
   facing: Facing
   hp: number
   trapped: boolean
+  // 困在泡泡中剩餘 tick；>0 表示被困，歸零自爆
+  trapTicksLeft: number
   dead: boolean
   moveSpeed: number
   bubblePower: number
@@ -109,6 +111,7 @@ export class Village10Sim {
         facing: 'down',
         hp: PLAYER_MAX_HP,
         trapped: false,
+        trapTicksLeft: 0,
         dead: false,
         moveSpeed: PLAYER_MOVE_SPEED,
         bubblePower: BASE_BUBBLE_POWER,
@@ -136,6 +139,7 @@ export class Village10Sim {
     if (p && !p.dead) {
       p.dead = true
       p.trapped = false
+      p.trapTicksLeft = 0
     }
     if (!this.finished) this.checkWinner()
   }
@@ -183,6 +187,7 @@ export class Village10Sim {
 
     this.tickBubbles()
     this.collectItems()
+    this.updateTrappedPlayers()
     this.checkWinner()
 
     const snap = this.snapshot()
@@ -226,6 +231,7 @@ export class Village10Sim {
       facing: p.facing,
       hp: p.hp,
       trapped: p.trapped,
+      trapTicksLeft: p.trapTicksLeft,
       dead: p.dead,
       moveSpeed: p.moveSpeed,
       bubblePower: p.bubblePower,
@@ -286,57 +292,71 @@ export class Village10Sim {
       fuseTicksLeft: BUBBLE_FUSE_TICKS,
     }
     this.bubbles.push(bubble)
-
-    const victim = this.players.find(
-      (p) =>
-        p.playerId !== player.playerId &&
-        !p.dead &&
-        worldToTile(p.x, p.y).col === col &&
-        worldToTile(p.x, p.y).row === row,
-    )
-    if (victim) {
-      victim.trapped = true
-      this.popBubble(bubble, victim)
-    }
   }
 
   private tickBubbles(): void {
     const toPop = [...this.bubbles]
     for (const bubble of toPop) {
       bubble.fuseTicksLeft -= 1
-      if (bubble.fuseTicksLeft <= 0) {
-        const victim = this.players.find(
-          (p) =>
-            p.trapped &&
-            !p.dead &&
-            worldToTile(p.x, p.y).col === bubble.col &&
-            worldToTile(p.x, p.y).row === bubble.row,
-        )
-        this.popBubble(bubble, victim ?? null)
-      }
+      if (bubble.fuseTicksLeft <= 0) this.popBubble(bubble)
     }
   }
 
-  private popBubble(bubble: SimBubble, trapped: SimPlayer | null): void {
+  private popBubble(bubble: SimBubble): void {
     this.bubbles = this.bubbles.filter((b) => b.id !== bubble.id)
     const owner = this.players.find((p) => p.playerId === bubble.ownerId)
-    if (!owner) return
+    // owner 可能已離線/陣亡，水球仍照樣爆；沒 owner 就用基礎威力
+    const power = owner?.bubblePower ?? BASE_BUBBLE_POWER
 
-    const hits = this.computeExplosionTiles(bubble.col, bubble.row, owner.bubblePower)
+    const hits = this.computeExplosionTiles(bubble.col, bubble.row, power)
     this.explosionsThisTick.push({ col: bubble.col, row: bubble.row, tiles: hits })
     this.applyExplosionToMap(hits)
-
-    if (trapped) {
-      trapped.trapped = false
-      this.damagePlayer(trapped, BUBBLE_DAMAGE)
-    }
 
     for (const p of this.players) {
       if (p.dead) continue
       const t = worldToTile(p.x, p.y)
-      if (hits.some((h) => h.col === t.col && h.row === t.row)) {
-        this.damagePlayer(p, BUBBLE_DAMAGE)
+      if (!hits.some((h) => h.col === t.col && h.row === t.row)) continue
+      // 已經被困在泡泡裡又被炸 → 直接爆破；否則被困住
+      if (p.trapped) this.burstPlayer(p)
+      else this.trapPlayer(p)
+    }
+  }
+
+  /** 被炸到：困進淡藍泡泡，開始 10s 倒數 */
+  private trapPlayer(player: SimPlayer): void {
+    if (player.dead) return
+    player.trapped = true
+    player.trapTicksLeft = BUBBLE_TRAP_TICKS
+  }
+
+  /** 泡泡爆破：玩家出局 */
+  private burstPlayer(player: SimPlayer): void {
+    player.dead = true
+    player.trapped = false
+    player.trapTicksLeft = 0
+  }
+
+  /**
+   * 每 tick 處理被困玩家：倒數歸零自爆；或被非同陣營的敵人觸碰立即爆破。
+   * （未來若有隊友，可改成隊友觸碰＝解救；目前尚未開放隊友機制）
+   */
+  private updateTrappedPlayers(): void {
+    const touchDist = PLAYER_BODY_HALF * 2 + 6
+    for (const p of this.players) {
+      if (p.dead || !p.trapped) continue
+      p.trapTicksLeft -= 1
+      if (p.trapTicksLeft <= 0) {
+        this.burstPlayer(p)
+        continue
       }
+      const touched = this.players.some(
+        (o) =>
+          o !== p &&
+          !o.dead &&
+          !o.trapped &&
+          Math.hypot(o.x - p.x, o.y - p.y) < touchDist,
+      )
+      if (touched) this.burstPlayer(p)
     }
   }
 
@@ -406,15 +426,6 @@ export class Village10Sim {
       player.bubblePower = Math.min(MAX_BUBBLE_POWER, player.bubblePower + 1)
     } else {
       player.maxBubbles = Math.min(MAX_BUBBLES_CAP, player.maxBubbles + 1)
-    }
-  }
-
-  private damagePlayer(player: SimPlayer, amount: number): void {
-    if (player.dead) return
-    player.hp = Math.max(0, player.hp - amount)
-    if (player.hp <= 0) {
-      player.dead = true
-      player.trapped = false
     }
   }
 
