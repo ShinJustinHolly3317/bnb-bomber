@@ -98,6 +98,9 @@ export class GameClient {
 
   leaveRoom(): void {
     this.send({ type: 'leaveRoom' })
+    this.roomCode = ''
+    this.lobby = null
+    this.lastSnapshot = null
   }
 
   requestRematch(): void {

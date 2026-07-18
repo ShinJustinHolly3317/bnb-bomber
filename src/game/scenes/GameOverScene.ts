@@ -14,6 +14,15 @@ export class GameOverScene extends Phaser.Scene {
     setBnbState({ scene: 'gameover', winner: data.winner, online })
     const { width, height } = this.scale
 
+    // 線上：對戰一結束就退出房間，避免有人卡在 ended 房間
+    if (online) {
+      try {
+        getGameClient().leaveRoom()
+      } catch {
+        // WS 已斷也沒差，server 端 dissolve 已清掉房間
+      }
+    }
+
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.65)
 
     this.add
@@ -25,7 +34,7 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5)
 
     const hint = online
-      ? 'R 回房間再戰  ·  Esc 回主選單'
+      ? 'R 回大廳再戰  ·  Esc 回主選單'
       : 'R 再戰一局  ·  Esc 回主選單'
     this.add
       .text(width / 2, height / 2 + 30, hint, {
@@ -37,15 +46,14 @@ export class GameOverScene extends Phaser.Scene {
 
     this.input.keyboard!.once('keydown-R', () => {
       if (online) {
-        getGameClient().requestRematch()
-        this.scene.start('LobbyScene')
+        // 房間已解散，回大廳列表重新開房 / 加入
+        this.scene.start('RoomBrowserScene')
         return
       }
       this.scene.start('DuelScene')
     })
     this.input.keyboard!.once('keydown-ESC', () => {
       if (online) {
-        getGameClient().leaveRoom()
         resetGameClient()
         this.registry.set('playMode', 'offline')
       }

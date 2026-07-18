@@ -74,6 +74,50 @@ async function run() {
   // 收尾：兩邊離開以停掉 tick timer
   room.handleMessage('p1', JSON.stringify({ type: 'leaveRoom' }))
   room.handleMessage('p2', JSON.stringify({ type: 'leaveRoom' }))
+
+  await testMatchEndDissolvesRoom()
+}
+
+/** 對戰結束後房間必須解散，不該有人卡在 ended 房間 */
+async function testMatchEndDissolvesRoom() {
+  const wsA = fakeWs()
+  const wsB = fakeWs()
+  let dissolved = null
+  const room = new GameRoom(
+    'END1',
+    'p1',
+    'A',
+    wsA,
+    () => {},
+    () => {},
+    (ids) => {
+      dissolved = ids
+    },
+  )
+  room.tryJoin('p2', 'B', wsB)
+  room.handleMessage('p1', JSON.stringify({ type: 'setReady', ready: true }))
+  room.handleMessage('p2', JSON.stringify({ type: 'setReady', ready: true }))
+
+  // 強制結束：淘汰一人 → 下一 tick 應 matchEnd + dissolve
+  room.handleDisconnect('p2')
+  await sleep(200)
+
+  const gotEnd = wsA.recv.some((m) => m.type === 'matchEnd')
+  if (!gotEnd) {
+    fails.push('🔴 對戰結束沒收到 matchEnd')
+    return
+  }
+  if (!dissolved || dissolved.length < 1) {
+    fails.push('🔴 對戰結束後房間沒解散（onDissolve 沒被呼叫）→ 會卡房間')
+    return
+  }
+  // 解散後不可再加入
+  const err = room.tryJoin('p3', 'C', fakeWs())
+  if (err == null && room.playerCount > 0) {
+    fails.push('🔴 已結束房間仍可加入')
+    return
+  }
+  passes.push(`對戰結束解散房間 OK：matchEnd 後踢出 ${dissolved.length} 人`)
 }
 
 run()

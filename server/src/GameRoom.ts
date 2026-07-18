@@ -39,6 +39,8 @@ export class GameRoom {
   private pendingInputs = new Map<string, PlayerInput>()
   private onEmpty: () => void
   private onUpdate: () => void
+  /** 對戰結束解散房間時，讓 RoomManager 清掉各連線的 roomCode */
+  private onDissolve: (playerIds: string[]) => void
 
   constructor(
     code: string,
@@ -47,11 +49,13 @@ export class GameRoom {
     hostWs: WebSocket,
     onEmpty: () => void,
     onUpdate: () => void = () => {},
+    onDissolve: (playerIds: string[]) => void = () => {},
   ) {
     this.code = code
     this.hostId = hostId
     this.onEmpty = onEmpty
     this.onUpdate = onUpdate
+    this.onDissolve = onDissolve
     this.addPlayer(hostId, hostName, 0, hostWs, true)
   }
 
@@ -80,7 +84,9 @@ export class GameRoom {
   }
 
   tryJoin(playerId: string, name: string, ws: WebSocket): string | null {
-    if (this.phase === 'match') return '對戰進行中，無法加入'
+    if (this.phase === 'match' || this.phase === 'ended') {
+      return '對戰已結束或進行中，無法加入'
+    }
     const occupied = new Set([...this.players.values()].map((p) => p.slot))
     let slot = -1
     for (let i = 0; i < LOBBY_MAX_PLAYERS; i++) {
@@ -125,7 +131,11 @@ export class GameRoom {
         this.removePlayer(playerId)
         break
       case 'requestRematch':
-        this.resetToLobby()
+        // 對戰結束後房間會解散；不再支援同房再戰
+        this.send(playerId, {
+          type: 'error',
+          message: '對戰已結束，請回大廳重新開房',
+        })
         break
       default:
         break
@@ -263,7 +273,8 @@ export class GameRoom {
         winnerId: snapshot.winnerId,
         winnerLabel: snapshot.winnerLabel,
       })
-      this.onUpdate()
+      // 對戰結束立刻解散房間，避免有人卡在 ended 房間變成 stale
+      this.dissolve()
     }
   }
 
@@ -274,14 +285,13 @@ export class GameRoom {
     }
   }
 
-  private resetToLobby(): void {
+  /** 清空所有玩家並刪除房間（對戰結束用） */
+  private dissolve(): void {
     this.stopMatch()
     this.sim = null
-    this.phase = 'lobby'
-    for (const p of this.players.values()) {
-      p.ready = false
-    }
-    this.broadcastLobby()
+    const playerIds = [...this.players.keys()]
+    this.players.clear()
+    this.onDissolve(playerIds)
   }
 
   private removePlayer(playerId: string): void {

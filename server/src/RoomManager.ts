@@ -117,6 +117,17 @@ export class RoomManager {
         this.broadcastRoomList()
       },
       () => this.broadcastRoomList(),
+      (playerIds) => {
+        // 對戰結束解散：清掉所有房內連線的 roomCode，房間從列表消失
+        for (const [, c] of this.connections) {
+          if (c.roomCode === code || playerIds.includes(c.playerId)) {
+            c.roomCode = null
+            c.browsing = true
+          }
+        }
+        this.rooms.delete(code)
+        this.broadcastRoomList()
+      },
     )
     this.rooms.set(code, room)
     conn.roomCode = code
